@@ -1,0 +1,310 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>io.asnetty</groupId>
+  <artifactId>asnetty-parent</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>ASNetty Parent</name>
+
+  <prerequisites>
+    <maven>3.0.3</maven>
+  </prerequisites>
+
+  <modules>
+      <module>asnetty-core</module>
+  </modules>
+
+  <properties>
+    <lib.sdk.version>15.0</lib.sdk.version>
+    <lib.sdk.groupId>com.adobe.air.framework</lib.sdk.groupId>
+    <!-- <lib.sdk.groupId>com.adobe.flex.framework</lib.sdk.groupId> -->
+    <!-- <lib.sdk.version>4.5.0.20967</lib.sdk.version> -->
+    <playerglobal.version>11.1</playerglobal.version>
+    <!-- <playerglobal.classifier>10.2</playerglobal.classifier> -->
+    <!-- <air.sdk.version>15.0</air.sdk.version> -->
+    <lib.sdk.scope>external</lib.sdk.scope>
+    <!-- flexmojos -->
+    <flexmojos.groupId>net.flexmojos.oss</flexmojos.groupId>
+    <flexmojos.version>7.1.0</flexmojos.version>
+    <flexmojos.debug>true</flexmojos.debug>
+    <flexmojos.skip>false</flexmojos.skip>
+    <flexmojos.locale>en_US</flexmojos.locale>
+    <!-- maven -->
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.test.skip>true</maven.test.skip>
+    <depends.copy.skip>true</depends.copy.skip>
+  </properties>
+
+  <build>
+    <sourceDirectory>src</sourceDirectory>
+    <testSourceDirectory>test</testSourceDirectory>
+
+    <resources>
+        <resource>
+            <directory>resources</directory>
+            <filtering>true</filtering>
+            <targetPath>${project.build.directory}</targetPath>
+            <includes>
+                <include>**/*.xml</include>
+                <include>**/*.swf</include>
+                <include>**/*.png</include>
+                <include>**/*.jpg</include>
+                <include>**/*.ico</include>
+            </includes>
+        </resource>
+    </resources>
+
+    <plugins>
+      <plugin>
+        <groupId>${flexmojos.groupId}</groupId>
+        <artifactId>flexmojos-maven-plugin</artifactId>
+      </plugin>
+      <!-- <plugin> -->
+          <!-- <groupId>org.apache.maven.plugins</groupId> -->
+          <!-- <artifactId>maven-dependency-plugin</artifactId> -->
+      <!-- </plugin> -->
+      <!-- <plugin> -->
+          <!-- <groupId>org.apache.maven.plugins</groupId> -->
+          <!-- <artifactId>maven-resources-plugin</artifactId> -->
+          <!-- <configuration> -->
+              <!-- <encoding>UTF-8</encoding> -->
+          <!-- </configuration> -->
+      <!-- </plugin> -->
+    </plugins>
+
+    <pluginManagement>
+      <plugins>
+          <plugin>
+              <groupId>org.codehaus.mojo</groupId>
+              <artifactId>buildnumber-maven-plugin</artifactId>
+              <version>1.2</version>
+              <executions>
+                  <execution>
+                      <goals>
+                          <goal>create-timestamp</goal>
+                      </goals>
+                  </execution>
+              </executions>
+          </plugin>
+        <plugin>
+          <groupId>${flexmojos.groupId}</groupId>
+          <artifactId>flexmojos-maven-plugin</artifactId>
+          <version>${flexmojos.version}</version>
+          <extensions>true</extensions>
+          <dependencies>
+            <dependency>
+              <groupId>com.adobe.air</groupId>
+              <artifactId>compiler</artifactId>
+              <version>${lib.sdk.version}</version>
+              <type>pom</type>
+            </dependency>
+          </dependencies>
+          <configuration>
+            <debug>${flexmojos.debug}</debug>
+            <skip>${flexmojo.skip}</skip>
+            <allowSourcePathOverlap>true</allowSourcePathOverlap>
+            <actionscriptFileEncoding>UTF-8</actionscriptFileEncoding>
+            <linkReportAttach>true</linkReportAttach>
+            <optimize>true</optimize>
+            <useGpu>true</useGpu>
+            <useDirectBlit>true</useDirectBlit>
+            <strict>true</strict>
+            <swfVersion>14</swfVersion>
+            <as3>true</as3>
+            <es>false</es>
+            <storepass/>
+            <flashPlayerCommand>FlashPlayerDebugger</flashPlayerCommand>
+            <defines>
+              <property>
+                <name>CONFIG::debug</name>
+                <value>${flexmojos.debug}</value>
+              </property>
+              <property>
+                <name>CONFIG::release</name>
+                <value>!${flexmojos.debug}</value>
+              </property>
+            </defines>
+            <compilerWarnings>
+                <warn-no-constructor>false</warn-no-constructor>
+            </compilerWarnings>
+          </configuration>
+        </plugin>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <version>2.6</version>
+            <configuration>
+                <skip>${depends.copy.skip}</skip>
+                <execludeGroupIds>
+                    ${flex.sdk.groupId}, ${project.groupId}
+                </execludeGroupIds>
+                <includeTypes>swc</includeTypes>
+                <outputDirectory>${basedir}/libs</outputDirectory>
+                <transitive>false</transitive>
+                <overWriteIfNewer>true</overWriteIfNewer>
+                <overWriteRelease>false</overWriteRelease>
+                <overWriteSnapshots>false</overWriteSnapshots>
+            </configuration>
+        </plugin>
+        <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+        <plugin>
+          <groupId>org.eclipse.m2e</groupId>
+          <artifactId>lifecycle-mapping</artifactId>
+          <version>1.0.0</version>
+          <configuration>
+            <lifecycleMappingMetadata>
+              <pluginExecutions>
+                <pluginExecution>
+                  <pluginExecutionFilter>
+                    <groupId>${flexmojos.groupId}</groupId>
+                    <artifactId>flexmojos-maven-plugin</artifactId>
+                    <versionRange>
+                      [4.2-beta,)
+                    </versionRange>
+                    <goals>
+                      <goal>test-compile</goal>
+                      <goal>compile-swc</goal>
+                      <goal>compile-swf</goal>
+                    </goals>
+                  </pluginExecutionFilter>
+                  <action>
+                    <ignore/>
+                  </action>
+                </pluginExecution>
+                <pluginExecution>
+                  <pluginExecutionFilter>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <versionRange>
+                      [2.0,)
+                    </versionRange>
+                    <goals>
+                      <goal>copy-dependencies</goal>
+                      <goal>unpack</goal>
+                    </goals>
+                  </pluginExecutionFilter>
+                  <action>
+                    <ignore/>
+                  </action>
+                </pluginExecution>
+              </pluginExecutions>
+            </lifecycleMappingMetadata>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+  <dependencies>
+      <!-- SDK dependencies -->
+    <dependency>
+      <groupId>${lib.sdk.groupId}</groupId>
+      <artifactId>common-framework</artifactId>
+      <version>${lib.sdk.version}</version>
+      <type>pom</type>
+    </dependency>
+    <dependency>
+      <groupId>com.adobe.flash.framework</groupId>
+      <artifactId>playerglobal</artifactId>
+      <version>${playerglobal.version}</version>
+      <type>swc</type>
+    </dependency>
+  </dependencies>
+
+  <developers>
+    <developer>
+      <id>keyhom</id>
+      <name>keyhom.c</name>
+      <email>keyhom.c@gmail.com</email>
+      <roles>
+        <role>designer, developer</role>
+      </roles>
+      <url>http://github.com/keyhom/</url>
+      <timezone>+8</timezone>
+    </developer>
+  </developers>
+
+  <scm>
+    <tag>HEAD</tag>
+    <url>scm:git:https://github.com/keyhom/ASNetty/</url>
+    <connection>scm:git:git://github.com/keyhom/ASNetty.git</connection>
+    <developerConnection>scm:git:https://github.com/keyhom/ASNetty.git</developerConnection>
+  </scm>
+
+  <distributionManagement>
+    <repository>
+      <id>releases</id>
+      <layout>default</layout>
+      <url>http://repository.keyhom.org/content/repositories/releases/</url>
+    </repository>
+    <snapshotRepository>
+      <id>snapshots</id>
+      <layout>default</layout>
+      <url>http://repository.keyhom.org/content/repositories/snapshots/</url>
+    </snapshotRepository>
+  </distributionManagement>
+
+  <!-- <repositories> -->
+    <!-- <repository> -->
+      <!-- <id>keyhom-repos</id> -->
+      <!-- <name>Keyhom's Repositories</name> -->
+      <!-- <layout>default</layout> -->
+      <!-- <url>http://repository.keyhom.org/content/groups/public/</url> -->
+      <!-- <releases> -->
+        <!-- <checksumPolicy>warn</checksumPolicy> -->
+        <!-- <enabled>true</enabled> -->
+        <!-- <updatePolicy>interval:7200</updatePolicy> -->
+      <!-- </releases> -->
+      <!-- <snapshots> -->
+        <!-- <checksumPolicy>warn</checksumPolicy> -->
+        <!-- <enabled>true</enabled> -->
+        <!-- <updatePolicy>interval:7200</updatePolicy> -->
+      <!-- </snapshots> -->
+    <!-- </repository> -->
+  <!-- </repositories> -->
+
+  <profiles>
+    <profile>
+      <id>flexunit</id>
+      <dependencies>
+        <dependency>
+          <groupId>com.adobe.flexunit</groupId>
+          <artifactId>flexunit</artifactId>
+          <version>4.0-rc-1</version>
+          <type>swc</type>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>${lib.sdk.groupId}</groupId>
+          <artifactId>common-framework</artifactId>
+          <version>${lib.sdk.version}</version>
+          <type>pom</type>
+        </dependency>
+      </dependencies>
+    </profile>
+
+    <profile>
+      <id>attach-sources</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.sonatype.flexmojos</groupId>
+            <artifactId>flexmojos-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>default-sources</id>
+                <goals>
+                  <goal>sources</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
+</project>
+<!--vim:ft=xml ts=2 sw=2 et -->
+
