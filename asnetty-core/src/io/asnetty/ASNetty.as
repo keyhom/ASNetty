@@ -1,22 +1,23 @@
-//------------------------------------------------------------------------------
-// Copyright (C) 2016 Shenzhen Qifun Network Co. Ltd. All Rights Reserved.
-//------------------------------------------------------------------------------
-
-package io.asnetty {
+package io.asnetty
+{
 
 /**
- * @author Jeremy (jeremy@qifun.com)
+ * @author Jeremy
  */
-public class ASNetty {
+public class ASNetty
+{
 
-    public function ASNetty() {
+    public function ASNetty()
+    {
     }
 
-    public static function get version() : String {
+    public static function get version() : String
+    {
         return "1.0";
     }
 
-    public static function get versionNumber() : Number {
+    public static function get versionNumber() : Number
+    {
         return 1.0;
     }
 

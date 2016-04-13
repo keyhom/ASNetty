@@ -8,7 +8,7 @@
   <name>ASNetty Parent</name>
 
   <prerequisites>
-    <maven>3.0.3</maven>
+    <maven>3.1.1</maven>
   </prerequisites>
 
   <modules>
@@ -16,17 +16,17 @@
   </modules>
 
   <properties>
-    <lib.sdk.version>15.0</lib.sdk.version>
+    <lib.sdk.version>20.0</lib.sdk.version>
     <lib.sdk.groupId>com.adobe.air.framework</lib.sdk.groupId>
     <!-- <lib.sdk.groupId>com.adobe.flex.framework</lib.sdk.groupId> -->
     <!-- <lib.sdk.version>4.5.0.20967</lib.sdk.version> -->
-    <playerglobal.version>11.1</playerglobal.version>
+    <playerglobal.version>20.0</playerglobal.version>
     <!-- <playerglobal.classifier>10.2</playerglobal.classifier> -->
     <!-- <air.sdk.version>15.0</air.sdk.version> -->
     <lib.sdk.scope>external</lib.sdk.scope>
     <!-- flexmojos -->
     <flexmojos.groupId>net.flexmojos.oss</flexmojos.groupId>
-    <flexmojos.version>7.1.0</flexmojos.version>
+    <flexmojos.version>6.0.1</flexmojos.version>
     <flexmojos.debug>true</flexmojos.debug>
     <flexmojos.skip>false</flexmojos.skip>
     <flexmojos.locale>en_US</flexmojos.locale>
@@ -59,6 +59,7 @@
       <plugin>
         <groupId>${flexmojos.groupId}</groupId>
         <artifactId>flexmojos-maven-plugin</artifactId>
+        <extensions>true</extensions>
       </plugin>
       <!-- <plugin> -->
           <!-- <groupId>org.apache.maven.plugins</groupId> -->
@@ -99,6 +100,11 @@
               <version>${lib.sdk.version}</version>
               <type>pom</type>
             </dependency>
+            <!-- <dependency> -->
+                <!-- <groupId>com.adobe</groupId> -->
+                <!-- <artifactId>fontkit</artifactId> -->
+                <!-- <version>1.0</version> -->
+            <!-- </dependency> -->
           </dependencies>
           <configuration>
             <debug>${flexmojos.debug}</debug>
@@ -147,51 +153,6 @@
                 <overWriteSnapshots>false</overWriteSnapshots>
             </configuration>
         </plugin>
-        <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
-        <plugin>
-          <groupId>org.eclipse.m2e</groupId>
-          <artifactId>lifecycle-mapping</artifactId>
-          <version>1.0.0</version>
-          <configuration>
-            <lifecycleMappingMetadata>
-              <pluginExecutions>
-                <pluginExecution>
-                  <pluginExecutionFilter>
-                    <groupId>${flexmojos.groupId}</groupId>
-                    <artifactId>flexmojos-maven-plugin</artifactId>
-                    <versionRange>
-                      [4.2-beta,)
-                    </versionRange>
-                    <goals>
-                      <goal>test-compile</goal>
-                      <goal>compile-swc</goal>
-                      <goal>compile-swf</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <ignore/>
-                  </action>
-                </pluginExecution>
-                <pluginExecution>
-                  <pluginExecutionFilter>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-dependency-plugin</artifactId>
-                    <versionRange>
-                      [2.0,)
-                    </versionRange>
-                    <goals>
-                      <goal>copy-dependencies</goal>
-                      <goal>unpack</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <ignore/>
-                  </action>
-                </pluginExecution>
-              </pluginExecutions>
-            </lifecycleMappingMetadata>
-          </configuration>
-        </plugin>
       </plugins>
     </pluginManagement>
   </build>
@@ -199,8 +160,8 @@
   <dependencies>
       <!-- SDK dependencies -->
     <dependency>
-      <groupId>${lib.sdk.groupId}</groupId>
-      <artifactId>common-framework</artifactId>
+      <groupId>com.adobe.air</groupId>
+      <artifactId>framework</artifactId>
       <version>${lib.sdk.version}</version>
       <type>pom</type>
     </dependency>
@@ -303,6 +264,58 @@
         </plugins>
       </build>
     </profile>
+
+    <!-- <profile> -->
+        <!-- <id>m2e</id> -->
+        <!-- <build> -->
+            <!-- <plugins> -->
+                <!-- <plugin> -->
+                  <!-- <groupId>org.eclipse.m2e</groupId> -->
+                  <!-- <artifactId>lifecycle-mapping</artifactId> -->
+                  <!-- <version>1.0.0</version> -->
+                  <!-- <configuration> -->
+                    <!-- <lifecycleMappingMetadata> -->
+                      <!-- <pluginExecutions> -->
+                        <!-- <pluginExecution> -->
+                          <!-- <pluginExecutionFilter> -->
+                            <!-- <groupId>${flexmojos.groupId}</groupId> -->
+                            <!-- <artifactId>flexmojos-maven-plugin</artifactId> -->
+                            <!-- <versionRange> -->
+                              <!-- [4.2-beta,) -->
+                            <!-- </versionRange> -->
+                            <!-- <goals> -->
+                              <!-- <goal>test-compile</goal> -->
+                              <!-- <goal>compile-swc</goal> -->
+                              <!-- <goal>compile-swf</goal> -->
+                            <!-- </goals> -->
+                          <!-- </pluginExecutionFilter> -->
+                          <!-- <action> -->
+                            <!-- <ignore/> -->
+                          <!-- </action> -->
+                        <!-- </pluginExecution> -->
+                        <!-- <pluginExecution> -->
+                          <!-- <pluginExecutionFilter> -->
+                            <!-- <groupId>org.apache.maven.plugins</groupId> -->
+                            <!-- <artifactId>maven-dependency-plugin</artifactId> -->
+                            <!-- <versionRange> -->
+                              <!-- [2.0,) -->
+                            <!-- </versionRange> -->
+                            <!-- <goals> -->
+                              <!-- <goal>copy-dependencies</goal> -->
+                              <!-- <goal>unpack</goal> -->
+                            <!-- </goals> -->
+                          <!-- </pluginExecutionFilter> -->
+                          <!-- <action> -->
+                            <!-- <ignore/> -->
+                          <!-- </action> -->
+                        <!-- </pluginExecution> -->
+                      <!-- </pluginExecutions> -->
+                    <!-- </lifecycleMappingMetadata> -->
+                  <!-- </configuration> -->
+                <!-- </plugin> -->
+            <!-- </plugins> -->
+        <!-- </build> -->
+    <!-- </profile> -->
   </profiles>
 
 </project>
