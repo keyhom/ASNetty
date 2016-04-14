@@ -58,7 +58,7 @@ public class DefaultChannelPipeline implements IChannelPipeline {
         if (!found)
             throw new Error("Cann't find the base handler named: " + baseName);
 
-        _contexts.insertAt(idx, new DefaultChannelHandlerContext(name, handler, invoker));
+        _contexts.splice(idx, 0, new DefaultChannelHandlerContext(name, handler, invoker));
 
         return this;
     }
@@ -80,7 +80,7 @@ public class DefaultChannelPipeline implements IChannelPipeline {
         if (!found)
             throw new Error("Cann't find the base handler named: " + baseName);
 
-        _contexts.insertAt(idx, new DefaultChannelHandlerContext(name, handler, invoker));
+        _contexts.splice(idx, 0, new DefaultChannelHandlerContext(name, handler, invoker));
 
         return this;
     }
@@ -220,7 +220,9 @@ public class DefaultChannelPipeline implements IChannelPipeline {
     }
 
     public function fireErrorCaught(cause:Error):IChannelPipeline {
-        return null;
+        if (cause)
+            throw cause;
+        return this;
     }
 
     public function fireChannelRead(msg:Object):IChannelPipeline {
@@ -278,14 +280,47 @@ import io.asnetty.handler.IChannelHandlerInvoker;
 class DefaultChannelHandlerContext implements IChannelHandlerContext {
 
     public var name:String;
-    public var handler:IChannelHandler;
+    private var _handler:IChannelHandler;
     public var invoker:IChannelHandlerInvoker;
 
     public function DefaultChannelHandlerContext(name:String,
                                                  handler:IChannelHandler, invoker:IChannelHandlerInvoker = null) {
         this.name = name;
-        this.handler = handler;
+        this._handler = handler;
         this.invoker = invoker;
     }
 
+    public function get handler():IChannelHandler {
+        return _handler;
+    }
+
 }
+
+class HeadContext extends DefaultChannelHandlerContext {
+
+    function HeadContext(name:String, handler:IChannelHandler, invoker:IChannelHandlerInvoker = null) {
+        super(name, handler, invoker);
+    }
+}
+
+class TailContext extends DefaultChannelHandlerContext implements IChannelHandler {
+
+    function TailContext(name:String, handler:IChannelHandler, invoker:IChannelHandlerInvoker = null) {
+        super(name, handler, invoker);
+    }
+
+    public override function get handler():IChannelHandler {
+        return this;
+    }
+
+    public function handlerAdded(ctx:IChannelHandlerContext):void {
+    }
+
+    public function handlerRemoved(ctx:IChannelHandlerContext):void {
+    }
+
+    public function errorCaught(ctx:IChannelHandlerContext, cause:Error):void {
+    }
+
+}
+

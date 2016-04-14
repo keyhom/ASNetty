@@ -1,6 +1,5 @@
 package io.asnetty.channel {
 
-import flash.errors.EOFError;
 import flash.errors.IOError;
 import flash.events.Event;
 import flash.events.IOErrorEvent;
@@ -70,52 +69,48 @@ public class SocketChannel implements IChannel {
         _socket = _socket || new Socket();
         _socket.timeout = timeout * 1000;
 
-        _socket.addEventListener(Event.CONNECT, _socket_operationComplete, false, 0, true);
-        _socket.addEventListener(Event.CLOSE, _socket_operationComplete, false, 0, true);
-        _socket.addEventListener(SecurityErrorEvent.SECURITY_ERROR, _socket_operationComplete, false, 0, true);
+        _socket.addEventListener(Event.CONNECT, _socket_connectOperationComplete);
 
-        _socket.addEventListener(ProgressEvent.SOCKET_DATA, _socket_dataEventHandler, false);
-        _socket.addEventListener(IOErrorEvent.IO_ERROR, _socket_ioErrorEventHandler, false, 0, true);
-        _socket.addEventListener(Event.CLOSE, _socket_closeEventHandler, false, 0, true);
+        _socket.addEventListener(ProgressEvent.SOCKET_DATA, _socket_dataEventHandler);
+        _socket.addEventListener(IOErrorEvent.IO_ERROR, _socket_ioErrorEventHandler);
+        _socket.addEventListener(Event.CLOSE, _socket_closeEventHandler);
+        _socket.addEventListener(SecurityErrorEvent.SECURITY_ERROR, _socket_securityErrorEventHandler);
 
         _connectFuture = _connectFuture || new DefaultChannelPromise(this);
         _pipeline = _pipeline || new DefaultChannelPipeline(this);
 
         _socket.connect(host, port);
 
-        function _socket_operationComplete(event:Event):void {
-            _socket.removeEventListener(Event.CONNECT, _socket_operationComplete);
-            _socket.removeEventListener(Event.CLOSE, _socket_operationComplete);
-            _socket.removeEventListener(SecurityErrorEvent.SECURITY_ERROR, _socket_operationComplete);
+        return _connectFuture;
+    }
 
-            var eventData:*;
-            if (event.type == Event.CONNECT) {
-                // Connected.
-                eventData = _connectFuture.channel;
+    /** @private EventHandler */
+    private function _socket_securityErrorEventHandler(event:SecurityErrorEvent):void {
+        // Security | timeout error.
+        var error:Error = new SecurityError((event as SecurityErrorEvent).text, (event as SecurityErrorEvent).errorID);
+        _pipeline.fireErrorCaught(error);
+    }
 
-                if (_socket.connected) {
-                    // Notify channel active during pipeline.
-                    _pipeline.fireChannelActive();
+    /** @private EventHandler */
+    private function _socket_connectOperationComplete(event:Event):void {
+        _socket.removeEventListener(Event.CONNECT, _socket_connectOperationComplete);
 
-                    // Mark free w.
-                    _bWritable = true;
-                }
-            } else if (event.type == Event.CLOSE) {
-                // EOF error.
-                eventData = new EOFError("Closed by EOF.");
-            } else if (event.type == SecurityErrorEvent.SECURITY_ERROR) {
-                // Security | timeout error.
-                eventData = new SecurityError((event as SecurityErrorEvent).text, (event as SecurityErrorEvent).errorID);
-            }
+        var eventData:* = _connectFuture.channel;
 
-            _connectFuture.dispatchEvent(new ChannelFutureEvent(eventData));
+        if (_socket.connected) {
+            _socket.flush();
+            // Notify channel active during pipeline.
+            _pipeline.fireChannelActive();
 
-            if (eventData is Error) {
-                _pipeline.fireErrorCaught(eventData as Error);
-            }
+            // Mark free w.
+            _bWritable = true;
+
+            // FIXME(Test):
+            _socket.writeUTFBytes("<policy-file-request/>");
+            _socket.flush();
         }
 
-        return _connectFuture;
+        _connectFuture.dispatchEvent(new ChannelFutureEvent(eventData));
     }
 
     /** @private EventHandler */
@@ -124,6 +119,7 @@ public class SocketChannel implements IChannel {
         theSocket.removeEventListener(Event.CLOSE, _socket_closeEventHandler);
         theSocket.removeEventListener(ProgressEvent.SOCKET_DATA, _socket_dataEventHandler);
         theSocket.removeEventListener(IOErrorEvent.IO_ERROR, _socket_ioErrorEventHandler);
+        theSocket.removeEventListener(SecurityErrorEvent.SECURITY_ERROR, _socket_securityErrorEventHandler);
 
         // TODO: force to shutdown the channel.
     }
@@ -136,8 +132,13 @@ public class SocketChannel implements IChannel {
     /** @private EventHandler */
     private function _socket_dataEventHandler(event:ProgressEvent):void {
         // data recv.
+        if (!_socket.connected || !_socket.bytesAvailable) {
+            return;
+        }
+
         var bytes:ByteArray = new ByteArray();
         _socket.readBytes(bytes, 0, _socket.bytesAvailable);
+        bytes.position = 0;
 
         _bReadable = true;
         _pipeline.fireChannelRead(bytes);
@@ -161,7 +162,9 @@ public class SocketChannel implements IChannel {
     }
 
     public function flush():IChannel {
-        return null;
+        if (_socket)
+            _socket.flush();
+        return this;
     }
 
     public function writeAndFlush(msg:*, promise:IChannelPromise = null):IChannelFuture {
