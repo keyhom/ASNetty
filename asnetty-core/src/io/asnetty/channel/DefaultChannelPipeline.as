@@ -270,6 +270,10 @@ public class DefaultChannelPipeline implements IChannelPipeline {
 } // class DefaultChannelPipeline
 }
 
+import io.asnetty.channel.IChannel;
+import io.asnetty.channel.IChannelFuture;
+import io.asnetty.channel.IChannelPipeline;
+import io.asnetty.channel.IChannelPromise;
 import io.asnetty.handler.IChannelHandler;
 import io.asnetty.handler.IChannelHandlerContext;
 import io.asnetty.handler.IChannelHandlerInvoker;
@@ -281,19 +285,86 @@ class DefaultChannelHandlerContext implements IChannelHandlerContext {
 
     public var name:String;
     private var _handler:IChannelHandler;
-    public var invoker:IChannelHandlerInvoker;
+    private var _invoker:IChannelHandlerInvoker;
 
     public function DefaultChannelHandlerContext(name:String,
                                                  handler:IChannelHandler, invoker:IChannelHandlerInvoker = null) {
         this.name = name;
         this._handler = handler;
-        this.invoker = invoker;
+        this._invoker = invoker;
     }
 
     public function get handler():IChannelHandler {
         return _handler;
     }
 
+    public function get channel():IChannel {
+        return null;
+    }
+
+    public function get invoker():IChannelHandlerInvoker {
+        return _invoker;
+    }
+
+    public function get isRemoved():Boolean {
+        return false;
+    }
+
+    public function get pipeline():IChannelPipeline {
+        return null;
+    }
+
+    public function fireChannelActive():IChannelHandlerContext {
+        return null;
+    }
+
+    public function fireChannelInactive():IChannelHandlerContext {
+        return null;
+    }
+
+    public function fireErrorCaught(cause:Error):IChannelHandlerContext {
+        return null;
+    }
+
+    public function fireChannelRead(msg:*):IChannelHandlerContext {
+        return null;
+    }
+
+    public function fireChannelReadComplete():IChannelHandlerContext {
+        return null;
+    }
+
+    public function fireChannelWritabilityChanged():IChannelHandlerContext {
+        return null;
+    }
+
+    public function connect(host:String, port:int, promise:IChannelPromise = null):IChannelFuture {
+        return null;
+    }
+
+    public function disconnect(promise:IChannelPromise = null):IChannelFuture {
+        return null;
+    }
+
+    public function close(promise:IChannelPromise = null):IChannelFuture {
+        return null;
+    }
+
+    public function read():IChannelHandlerContext {
+        return null;
+    }
+
+    public function write(obj:*, promise:IChannelPromise = null):IChannelHandlerContext {
+        return null;
+    }
+
+    public function flush():IChannelHandlerContext {
+        return null;
+    }
+
+    public function writeAndFlush(msg:*, promise:IChannelPromise = null):IChannelFuture {
+        return null;
+    }
 }
 
 class HeadContext extends DefaultChannelHandlerContext {
@@ -301,16 +372,15 @@ class HeadContext extends DefaultChannelHandlerContext {
     function HeadContext(name:String, handler:IChannelHandler, invoker:IChannelHandlerInvoker = null) {
         super(name, handler, invoker);
     }
+
 }
 
-class TailContext extends DefaultChannelHandlerContext implements IChannelHandler {
+class TailContext extends DefaultChannelHandlerContext {
 
-    function TailContext(name:String, handler:IChannelHandler, invoker:IChannelHandlerInvoker = null) {
-        super(name, handler, invoker);
-    }
+    private var _handler:IChannelHandler;
 
-    public override function get handler():IChannelHandler {
-        return this;
+    function TailContext() {
+        super("TailContext", _handler, null);
     }
 
     public function handlerAdded(ctx:IChannelHandlerContext):void {
@@ -320,6 +390,44 @@ class TailContext extends DefaultChannelHandlerContext implements IChannelHandle
     }
 
     public function errorCaught(ctx:IChannelHandlerContext, cause:Error):void {
+    }
+
+    public function channelActive(ctx:IChannelHandlerContext):void {
+    }
+
+    public function channelInactive(ctx:IChannelHandlerContext):void {
+    }
+
+    public function channelRead(ctx:IChannelHandlerContext, msg:*):void {
+    }
+
+    public function channelReadComplete(ctx:IChannelHandlerContext):void {
+    }
+
+    public function userEventTriggered(ctx:IChannelHandlerContext):void {
+    }
+
+    public function channelWritabilityChanged(ctx:IChannelHandlerContext):void {
+    }
+
+    public function connect(ctx:IChannelHandlerContext, host:String, port:int, promise:IChannelPromise = null):void {
+        ctx.connect(host, port, promise);
+    }
+
+    public function disconnect(ctx:IChannelHandlerContext, promise:IChannelPromise = null):void {
+    }
+
+    public function close(ctx:IChannelHandlerContext, promise:IChannelPromise = null):void {
+    }
+
+    public function read(ctx:IChannelHandlerContext):void {
+    }
+
+    public function write(ctx:IChannelHandlerContext):void {
+    }
+
+    public function flush(ctx:IChannelHandlerContext):void {
+
     }
 
 }

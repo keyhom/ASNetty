@@ -106,7 +106,7 @@ public class SocketChannel implements IChannel {
             _bWritable = true;
 
             // FIXME(Test):
-            _socket.writeUTFBytes("<policy-file-request/>");
+            _socket.writeUTFBytes("GET / HTTP/1.1\n\n");
             _socket.flush();
         }
 
