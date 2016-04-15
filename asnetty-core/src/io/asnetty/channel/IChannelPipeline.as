@@ -1,28 +1,22 @@
 package io.asnetty.channel {
 
-import flash.events.Event;
 import flash.utils.Dictionary;
 
 import io.asnetty.handler.IChannelHandler;
 import io.asnetty.handler.IChannelHandlerContext;
-import io.asnetty.handler.IChannelHandlerInvoker;
 
 /**
  * @author Jeremy
  */
 public interface IChannelPipeline {
 
-    function addFirst(name:String, handler:IChannelHandler,
-            invoker:IChannelHandlerInvoker = null):IChannelPipeline;
+    function addFirst(name:String, handler:IChannelHandler):IChannelPipeline;
 
-    function addLast(name:String, handler:IChannelHandler,
-            invoker:IChannelHandlerInvoker = null):IChannelPipeline;
+    function addLast(name:String, handler:IChannelHandler):IChannelPipeline;
 
-    function addBefore(baseName:String, name:String, handler:IChannelHandler,
-            invoker:IChannelHandlerInvoker = null):IChannelPipeline;
+    function addBefore(baseName:String, name:String, handler:IChannelHandler):IChannelPipeline;
 
-    function addAfter(baseName:String, name:String, handler:IChannelHandler,
-            invoker:IChannelHandlerInvoker = null):IChannelPipeline;
+    function addAfter(baseName:String, name:String, handler:IChannelHandler):IChannelPipeline;
 
     function remove(handler:IChannelHandler):IChannelHandler;
 
@@ -35,7 +29,7 @@ public interface IChannelPipeline {
     function removeLast():IChannelHandler;
 
     function replace(old:*, newName:String,
-            newHandler:IChannelHandler):IChannelPipeline;
+                     newHandler:IChannelHandler):IChannelPipeline;
 
     /** Returns the <code>IChannel</code> that this pipeline attached to. */
     function get channel():IChannel;
@@ -65,22 +59,32 @@ public interface IChannelPipeline {
     function context(nameOrInstanceOrClass:*):IChannelHandlerContext;
 
     function fireChannelActive():IChannelPipeline;
+
     function fireChannelInactive():IChannelPipeline;
+
     function fireErrorCaught(cause:Error):IChannelPipeline;
+
 //    function fireUserEventTriggered(event:Event):IChannelPipeline;
     function fireChannelRead(msg:Object):IChannelPipeline;
+
     function fireChannelReadComplete():IChannelPipeline;
+
     function fireChannelWritabilityChanged():IChannelPipeline;
 
     function connect(host:String, port:uint, promise:IChannelPromise = null):IChannelFuture;
+
     function disconnect(promise:IChannelPromise = null):IChannelFuture;
+
     function close(promise:IChannelPromise = null):IChannelFuture;
 
     function read():IChannelPipeline;
+
     function write(msg:*, promise:IChannelPromise = null):IChannelPipeline;
+
     function flush():IChannelPipeline;
+
     function writeAndFlush(msg:*, promise:IChannelPromise =
             null):IChannelFuture;
 
-}
+} // interface IChannelPipeline
 }

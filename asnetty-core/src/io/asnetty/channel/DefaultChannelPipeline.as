@@ -4,7 +4,6 @@ import flash.utils.Dictionary;
 
 import io.asnetty.handler.IChannelHandler;
 import io.asnetty.handler.IChannelHandlerContext;
-import io.asnetty.handler.IChannelHandlerInvoker;
 
 /**
  * @author Jeremy
@@ -12,6 +11,8 @@ import io.asnetty.handler.IChannelHandlerInvoker;
 public class DefaultChannelPipeline implements IChannelPipeline {
 
     private var _channel:IChannel;
+    private var _head:HeadContext;
+    private var _tail:TailContext;
 
     /** @private */
     private var _contexts:Vector.<DefaultChannelHandlerContext>;
@@ -25,25 +26,22 @@ public class DefaultChannelPipeline implements IChannelPipeline {
         this._contexts = new <DefaultChannelHandlerContext>[];
     }
 
-    public function addFirst(name:String, handler:IChannelHandler,
-                             invoker:IChannelHandlerInvoker = null):IChannelPipeline {
+    public function addFirst(name:String, handler:IChannelHandler):IChannelPipeline {
         const ctx:DefaultChannelHandlerContext = new
-                DefaultChannelHandlerContext(name, handler, invoker);
+                DefaultChannelHandlerContext(this, name, handler, true, true);
         _contexts.unshift(ctx);
         return this;
     }
 
-    public function addLast(name:String, handler:IChannelHandler,
-                            invoker:IChannelHandlerInvoker = null):IChannelPipeline {
+    public function addLast(name:String, handler:IChannelHandler):IChannelPipeline {
         const ctx:DefaultChannelHandlerContext = new
-                DefaultChannelHandlerContext(name, handler, invoker);
+                DefaultChannelHandlerContext(this, name, handler, true, true);
         _contexts.push(ctx);
         return this;
     }
 
     public function addBefore(baseName:String, name:String,
-                              handler:IChannelHandler, invoker:IChannelHandlerInvoker =
-                                      null):IChannelPipeline {
+                              handler:IChannelHandler):IChannelPipeline {
         var idx:uint = 0;
         var found:Boolean = false;
         for each (var c:DefaultChannelHandlerContext in _contexts) {
@@ -58,14 +56,13 @@ public class DefaultChannelPipeline implements IChannelPipeline {
         if (!found)
             throw new Error("Cann't find the base handler named: " + baseName);
 
-        _contexts.splice(idx, 0, new DefaultChannelHandlerContext(name, handler, invoker));
+        _contexts.splice(idx, 0, new DefaultChannelHandlerContext(this, name, handler, true, true));
 
         return this;
     }
 
     public function addAfter(baseName:String, name:String,
-                             handler:IChannelHandler, invoker:IChannelHandlerInvoker =
-                                     null):IChannelPipeline {
+                             handler:IChannelHandler):IChannelPipeline {
         var idx:uint = 0;
         var found:Boolean = false;
         for each (var c:DefaultChannelHandlerContext in _contexts) {
@@ -80,7 +77,7 @@ public class DefaultChannelPipeline implements IChannelPipeline {
         if (!found)
             throw new Error("Cann't find the base handler named: " + baseName);
 
-        _contexts.splice(idx, 0, new DefaultChannelHandlerContext(name, handler, invoker));
+        _contexts.splice(idx, 0, new DefaultChannelHandlerContext(this, name, handler, true, true));
 
         return this;
     }
@@ -153,22 +150,32 @@ public class DefaultChannelPipeline implements IChannelPipeline {
     }
 
     public function get first():IChannelHandler {
-        if (_contexts.length == 0)
-            return null;
-        return _contexts[0].handler;
+        var ctx:IChannelHandlerContext = firstContext;
+        if (ctx) {
+            return ctx.handler;
+        }
+        return null;
     }
 
     public function get last():IChannelHandler {
-        return _contexts[_contexts.length - 1].handler;
+        var ctx:IChannelHandlerContext = lastContext;
+        if (ctx)
+            return ctx.handler;
+        return null;
     }
 
     public function get firstContext():IChannelHandlerContext {
-        return _contexts[0];
+        var first:DefaultChannelHandlerContext = _head.next;
+        if (first != _tail) {
+            return first;
+        }
+        return null;
     }
 
     public function get lastContext():IChannelHandlerContext {
-        if (_contexts.length > 0)
-            return _contexts[_contexts.length - 1];
+        var last:DefaultChannelHandlerContext = _tail.prev;
+        if (last != _head)
+            return last;
         return null;
     }
 
@@ -190,16 +197,20 @@ public class DefaultChannelPipeline implements IChannelPipeline {
 
     public function getHandler(byWhat:*):IChannelHandler {
         if (byWhat is String) {
+            //noinspection JSDuplicatedDeclaration
             for each (var c:DefaultChannelHandlerContext in _contexts) {
                 if (c.name == byWhat)
                     return c.handler;
             }
-        } else if (byWhat is Class) {
+        }
+        else if (byWhat is Class) {
+            //noinspection JSDuplicatedDeclaration
             for each (var c:DefaultChannelHandlerContext in _contexts) {
                 if (c.handler is byWhat)
                     return c.handler;
             }
-        } else {
+        }
+        else {
             // NOOP
         }
         return null;
@@ -208,7 +219,7 @@ public class DefaultChannelPipeline implements IChannelPipeline {
     public function context(nameOrInstanceOrClass:*):IChannelHandlerContext {
         const name:String = nameOrInstanceOrClass is String ? String(nameOrInstanceOrClass) : nameOrInstanceOrClass.toString();
         const instance:IChannelHandler = nameOrInstanceOrClass as IChannelHandler;
-        return new DefaultChannelHandlerContext(name, instance);
+        return new DefaultChannelHandlerContext(this, name, instance, true, true);
     }
 
     public function fireChannelActive():IChannelPipeline {
@@ -270,28 +281,45 @@ public class DefaultChannelPipeline implements IChannelPipeline {
 } // class DefaultChannelPipeline
 }
 
+import io.asnetty.channel.DefaultChannelPipeline;
 import io.asnetty.channel.IChannel;
 import io.asnetty.channel.IChannelFuture;
 import io.asnetty.channel.IChannelPipeline;
 import io.asnetty.channel.IChannelPromise;
 import io.asnetty.handler.IChannelHandler;
 import io.asnetty.handler.IChannelHandlerContext;
-import io.asnetty.handler.IChannelHandlerInvoker;
 
 /**
  * @author Jeremy
  */
 class DefaultChannelHandlerContext implements IChannelHandlerContext {
 
-    public var name:String;
+    private var _name:String;
     private var _handler:IChannelHandler;
-    private var _invoker:IChannelHandlerInvoker;
+    private var _pipeline:DefaultChannelPipeline;
+    private var _handlerRemoved:Boolean;
+    private var _succeededFuture:IChannelFuture;
 
-    public function DefaultChannelHandlerContext(name:String,
-                                                 handler:IChannelHandler, invoker:IChannelHandlerInvoker = null) {
-        this.name = name;
+    public var prev:DefaultChannelHandlerContext;
+    public var next:DefaultChannelHandlerContext;
+
+    private var _inbound:Boolean;
+    private var _outbound:Boolean;
+
+    public function DefaultChannelHandlerContext(pipeline:DefaultChannelPipeline, name:String,
+                                                 handler:IChannelHandler,
+                                                 inbound:Boolean,
+                                                 outbound:Boolean) {
+        super();
+
+        this._name = name;
         this._handler = handler;
-        this._invoker = invoker;
+        this._inbound = inbound;
+        this._outbound = outbound;
+    }
+
+    public function get name():String {
+        return _name;
     }
 
     public function get handler():IChannelHandler {
@@ -299,88 +327,174 @@ class DefaultChannelHandlerContext implements IChannelHandlerContext {
     }
 
     public function get channel():IChannel {
-        return null;
-    }
-
-    public function get invoker():IChannelHandlerInvoker {
-        return _invoker;
+        return _pipeline.channel;
     }
 
     public function get isRemoved():Boolean {
-        return false;
+        return _handlerRemoved;
     }
 
     public function get pipeline():IChannelPipeline {
-        return null;
+        return _pipeline;
     }
 
     public function fireChannelActive():IChannelHandlerContext {
-        return null;
+        const next:DefaultChannelHandlerContext = this.findContextInbound();
+        next.invokeChannelActive();
+        return this;
     }
 
     public function fireChannelInactive():IChannelHandlerContext {
-        return null;
+        const next:DefaultChannelHandlerContext = this.findContextInbound();
+        next.invokeChannelInactive();
+        return this;
     }
 
     public function fireErrorCaught(cause:Error):IChannelHandlerContext {
-        return null;
+        const next:DefaultChannelHandlerContext = this.next;
+        next.invokeErrorCaught(cause);
+        return this;
     }
 
     public function fireChannelRead(msg:*):IChannelHandlerContext {
-        return null;
+        const next:DefaultChannelHandlerContext = this.findContextInbound();
+        next.invokeChannelRead(msg);
+        return this;
     }
 
     public function fireChannelReadComplete():IChannelHandlerContext {
-        return null;
+        const next:DefaultChannelHandlerContext = this.findContextInbound();
+        next.invokeChannelReadComplete();
+        return this;
     }
 
     public function fireChannelWritabilityChanged():IChannelHandlerContext {
-        return null;
+        const next:DefaultChannelHandlerContext = this.findContextInbound();
+        next.invokeChannelWritabilityChanged();
+        return this;
     }
 
-    public function connect(host:String, port:int, promise:IChannelPromise = null):IChannelFuture {
-        return null;
+    public function makeConnect(host:String, port:int, promise:IChannelPromise = null):IChannelFuture {
+        const next:DefaultChannelHandlerContext = this.findContextOutbound();
+        next.invokeConnect(host, port, promise);
+        return promise;
     }
 
-    public function disconnect(promise:IChannelPromise = null):IChannelFuture {
-        return null;
+    public function makeDisconnect(promise:IChannelPromise = null):IChannelFuture {
+        // close directly if disconnecting not supported.
+        const next:DefaultChannelHandlerContext = this.findContextOutbound();
+        next.invokeDisconnect(promise);
+        return promise;
     }
 
-    public function close(promise:IChannelPromise = null):IChannelFuture {
-        return null;
+    public function makeClose(promise:IChannelPromise = null):IChannelFuture {
+        const next:DefaultChannelHandlerContext = this.findContextOutbound();
+        next.invokeClose(promise);
+        return promise;
     }
 
-    public function read():IChannelHandlerContext {
-        return null;
+    public function makeRead():IChannelHandlerContext {
+        const next:DefaultChannelHandlerContext = this.findContextOutbound();
+        next.invokeRead();
+        return this;
     }
 
-    public function write(obj:*, promise:IChannelPromise = null):IChannelHandlerContext {
-        return null;
+    public function makeWrite(obj:*, promise:IChannelPromise = null):IChannelFuture {
+        const next:DefaultChannelHandlerContext = this.findContextOutbound();
+        next.invokeWrite(obj, promise);
+        return promise;
     }
 
-    public function flush():IChannelHandlerContext {
-        return null;
+    public function makeFlush():IChannelHandlerContext {
+        const next:DefaultChannelHandlerContext = this.findContextOutbound();
+        next.invokeFlush();
+        return this;
     }
 
-    public function writeAndFlush(msg:*, promise:IChannelPromise = null):IChannelFuture {
-        return null;
+    public function makeWriteAndFlush(msg:*, promise:IChannelPromise = null):IChannelFuture {
+        const next:DefaultChannelHandlerContext = this.findContextOutbound();
+        next.invokeWriteAndFlush(msg, promise);
+        return promise;
     }
+
+    private function findContextInbound():DefaultChannelHandlerContext {
+        var ctx:DefaultChannelHandlerContext = this;
+        do {
+            ctx = ctx.next;
+        } while (!ctx._inbound);
+        return ctx;
+    }
+
+    private function findContextOutbound():DefaultChannelHandlerContext {
+        var ctx:DefaultChannelHandlerContext = this;
+        do {
+            ctx = ctx.prev;
+        } while (!ctx._outbound);
+        return ctx;
+    }
+
+    internal function invokeChannelActive():void {
+        handler.channelActive(this);
+    }
+
+    internal function invokeChannelInactive():void {
+        handler.channelInactive(this);
+    }
+
+    internal function invokeErrorCaught(cause:Error):void {
+        handler.errorCaught(this, cause);
+    }
+
+    internal function invokeChannelRead(msg:*):void {
+        handler.channelRead(this, msg);
+    }
+
+    internal function invokeChannelReadComplete():void {
+        handler.channelReadComplete(this);
+    }
+
+    internal function invokeChannelWritabilityChanged():void {
+        handler.channelWritabilityChanged(this);
+    }
+
+    internal function invokeConnect(host:String, port:int, promise:IChannelPromise):void {
+        handler.connect(this, host, port, promise);
+    }
+
+    internal function invokeDisconnect(promise:IChannelPromise):void {
+        handler.disconnect(this, promise);
+    }
+
+    internal function invokeClose(promise:IChannelPromise):void {
+        handler.close(this, promise);
+    }
+
+    internal function invokeRead():void {
+        handler.read(this);
+    }
+
+    internal function invokeWrite(obj:*, promise:IChannelPromise):void {
+        handler.write(this, obj, promise);
+    }
+
+    internal function invokeFlush():void {
+        handler.flush(this);
+    }
+
+    internal function invokeWriteAndFlush(msg:*, promise:IChannelPromise):void {
+        handler.write(this, msg, promise);
+        handler.flush(this);
+    }
+
 }
 
-class HeadContext extends DefaultChannelHandlerContext {
+/**
+ * @author Jeremy
+ */
+class HeadContext extends DefaultChannelHandlerContext implements IChannelHandler {
 
-    function HeadContext(name:String, handler:IChannelHandler, invoker:IChannelHandlerInvoker = null) {
-        super(name, handler, invoker);
-    }
-
-}
-
-class TailContext extends DefaultChannelHandlerContext {
-
-    private var _handler:IChannelHandler;
-
-    function TailContext() {
-        super("TailContext", _handler, null);
+    public function HeadContext(pipeline:DefaultChannelPipeline) {
+        super(pipeline, "HeadContext", this, false, true);
     }
 
     public function handlerAdded(ctx:IChannelHandlerContext):void {
@@ -404,14 +518,10 @@ class TailContext extends DefaultChannelHandlerContext {
     public function channelReadComplete(ctx:IChannelHandlerContext):void {
     }
 
-    public function userEventTriggered(ctx:IChannelHandlerContext):void {
-    }
-
     public function channelWritabilityChanged(ctx:IChannelHandlerContext):void {
     }
 
     public function connect(ctx:IChannelHandlerContext, host:String, port:int, promise:IChannelPromise = null):void {
-        ctx.connect(host, port, promise);
     }
 
     public function disconnect(ctx:IChannelHandlerContext, promise:IChannelPromise = null):void {
@@ -423,11 +533,68 @@ class TailContext extends DefaultChannelHandlerContext {
     public function read(ctx:IChannelHandlerContext):void {
     }
 
-    public function write(ctx:IChannelHandlerContext):void {
+    public function write(ctx:IChannelHandlerContext, msg:*, promise:IChannelPromise = null):void {
     }
 
     public function flush(ctx:IChannelHandlerContext):void {
+    }
+}
 
+/**
+ * @author Jeremy
+ */
+class TailContext extends DefaultChannelHandlerContext implements IChannelHandler {
+
+    public function TailContext(pipeline:DefaultChannelPipeline) {
+        super(pipeline, "TailContext", this, true, false);
+    }
+
+    public function handlerAdded(ctx:IChannelHandlerContext):void {
+    }
+
+    public function handlerRemoved(ctx:IChannelHandlerContext):void {
+    }
+
+    public function errorCaught(ctx:IChannelHandlerContext, cause:Error):void {
+    }
+
+    public function channelActive(ctx:IChannelHandlerContext):void {
+    }
+
+    public function channelInactive(ctx:IChannelHandlerContext):void {
+    }
+
+    public function channelRead(ctx:IChannelHandlerContext, msg:*):void {
+    }
+
+    public function channelReadComplete(ctx:IChannelHandlerContext):void {
+    }
+
+    public function channelWritabilityChanged(ctx:IChannelHandlerContext):void {
+    }
+
+    public function connect(ctx:IChannelHandlerContext, host:String, port:int, promise:IChannelPromise = null):void {
+        ctx.makeConnect(host, port, promise);
+    }
+
+    public function disconnect(ctx:IChannelHandlerContext, promise:IChannelPromise = null):void {
+        ctx.makeDisconnect(promise);
+    }
+
+    public function close(ctx:IChannelHandlerContext, promise:IChannelPromise = null):void {
+        ctx.makeClose(promise);
+    }
+
+    public function read(ctx:IChannelHandlerContext):void {
+        ctx.makeRead();
+    }
+
+    public function write(ctx:IChannelHandlerContext, msg:*, promise:IChannelPromise = null):void {
+
+    }
+
+    public function flush(ctx:IChannelHandlerContext):void {
+        ctx.makeFlush();
     }
 
 }

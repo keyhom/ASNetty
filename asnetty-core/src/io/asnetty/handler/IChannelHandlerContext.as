@@ -6,9 +6,9 @@ import io.asnetty.channel.IChannelPromise;
 
 public interface IChannelHandlerContext {
 
-    function get channel():IChannel;
+    function get handler():IChannelHandler;
 
-    function get invoker():IChannelHandlerInvoker;
+    function get channel():IChannel;
 
     function get isRemoved():Boolean;
 
@@ -26,19 +26,19 @@ public interface IChannelHandlerContext {
 
     function fireChannelWritabilityChanged():IChannelHandlerContext;
 
-    function connect(host:String, port:int, promise:IChannelPromise = null):IChannelFuture;
+    function makeConnect(host:String, port:int, promise:IChannelPromise = null):IChannelFuture;
 
-    function disconnect(promise:IChannelPromise = null):IChannelFuture;
+    function makeDisconnect(promise:IChannelPromise = null):IChannelFuture;
 
-    function close(promise:IChannelPromise = null):IChannelFuture;
+    function makeClose(promise:IChannelPromise = null):IChannelFuture;
 
-    function read():IChannelHandlerContext;
+    function makeRead():IChannelHandlerContext;
 
-    function write(obj:*, promise:IChannelPromise = null):IChannelHandlerContext;
+    function makeWrite(obj:*, promise:IChannelPromise = null):IChannelFuture;
 
-    function flush():IChannelHandlerContext;
+    function makeFlush():IChannelHandlerContext;
 
-    function writeAndFlush(msg:*, promise:IChannelPromise = null):IChannelFuture;
+    function makeWriteAndFlush(msg:*, promise:IChannelPromise = null):IChannelFuture;
 
 }
 }

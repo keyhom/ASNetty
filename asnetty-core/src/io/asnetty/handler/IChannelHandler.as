@@ -30,7 +30,7 @@ public interface IChannelHandler {
 
     function read(ctx:IChannelHandlerContext):void;
 
-    function write(ctx:IChannelHandlerContext):void;
+    function write(ctx:IChannelHandlerContext, msg:*, promise:IChannelPromise = null):void;
 
     function flush(ctx:IChannelHandlerContext):void;
 
