@@ -4,13 +4,14 @@
 
 package io.asnetty.bootstrap {
 
-import flash.events.Event;
+import avmplus.getQualifiedClassName;
+
 import flash.events.EventDispatcher;
 
 import io.asnetty.channel.ChannelFutureEvent;
-
 import io.asnetty.channel.IChannel;
 import io.asnetty.channel.IChannelFuture;
+import io.asnetty.channel.IChannelPipeline;
 import io.asnetty.handler.IChannelHandler;
 
 [Event(name="complete", type="flash.events.Event")]
@@ -44,6 +45,13 @@ public class Bootstrap extends EventDispatcher {
         _validate();
 
         var channel:IChannel = new _channelClass();
+
+        const pipeline:IChannelPipeline = channel.pipeline;
+        if (!pipeline)
+            throw "Null pipeline.";
+
+        pipeline.addLast(getQualifiedClassName(_handler), _handler);
+
         var future:IChannelFuture = channel.connect(host, port);
 
         future.addEventListener(ChannelFutureEvent.OPERATION_COMPLETE, _future_operationComplete, false, 0, true);

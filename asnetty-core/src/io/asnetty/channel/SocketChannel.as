@@ -1,5 +1,45 @@
 package io.asnetty.channel {
 
+/**
+ * @author Jeremy
+ */
+public class SocketChannel extends AbstractChannel implements IChannel {
+
+    private var _connectFuture:IChannelFuture;
+    private var _closeFuture:IChannelFuture;
+
+    /**
+     * Constructs by the specified host and port.
+     */
+    public function SocketChannel() {
+        super(new SocketChannelUnsafe(this));
+        _connectFuture = new DefaultChannelPromise(this);
+        _closeFuture = new DefaultChannelPromise(this);
+    }
+
+    override public function get isOpen():Boolean {
+        return (unsafe as SocketChannelUnsafe).isOpen;
+    }
+
+    public function get connectFuture():IChannelFuture {
+        return _connectFuture;
+    }
+
+    public function get closeFuture():IChannelFuture {
+        return _closeFuture;
+    }
+
+    public function setWritable(value:Boolean):void {
+        this.writable = value;
+    }
+
+    public function setReadable(value:Boolean):void {
+        this.readable = value;
+    }
+
+}
+}
+
 import flash.errors.IOError;
 import flash.events.Event;
 import flash.events.IOErrorEvent;
@@ -8,65 +48,42 @@ import flash.events.SecurityErrorEvent;
 import flash.net.Socket;
 import flash.utils.ByteArray;
 
+import io.asnetty.channel.AbstractUnsafe;
+import io.asnetty.channel.ChannelFutureEvent;
+import io.asnetty.channel.IChannelFuture;
+import io.asnetty.channel.IChannelPromise;
+import io.asnetty.channel.SocketChannel;
+
 /**
+ *
  * @author Jeremy
  */
-public class SocketChannel implements IChannel {
-
-    static private var __INSTANCE_ID:int = 0;
+class SocketChannelUnsafe extends AbstractUnsafe {
 
     private var _socket:Socket;
-    private var _connectFuture:IChannelFuture;
-    private var _closeFuture:IChannelFuture;
-
-    private var _pipeline:IChannelPipeline;
-    private var _id:int;
-    private var _parent:IChannel;
-
-    private var _bActive:Boolean;
-    private var _bWritable:Boolean;
-    private var _bReadable:Boolean;
 
     /**
-     * Constructs by the specified host and port.
+     * Constructor
      */
-    public function SocketChannel() {
-        super();
-        this._id = ++__INSTANCE_ID;
-        this._bActive = false;
-        this._bWritable = this._bReadable = false;
-    }
-
-    public function get id():uint {
-        return _id;
-    }
-
-    public function get parent():IChannel {
-        return _parent;
+    public function SocketChannelUnsafe(channel:SocketChannel) {
+        super(channel);
     }
 
     public function get isOpen():Boolean {
         return _socket && _socket.connected;
     }
 
-    public function get isActive():Boolean {
-        return _bActive;
+    protected function get ch():SocketChannel {
+        return channel as SocketChannel;
     }
 
-    public function get isWritable():Boolean {
-        return _bWritable;
+    override public function connect(host:String, port:int, promise:IChannelPromise):void {
+        doConnect(host, port);
     }
 
-    public function get isReadable():Boolean {
-        return _bReadable;
-    }
-
-    public function get pipeline():IChannelPipeline {
-        return _pipeline;
-    }
-
-    public function connect(host:String, port:int, timeout:Number = 30):IChannelFuture {
+    protected function doConnect(host:String, port:int):IChannelFuture {
         _socket = _socket || new Socket();
+        var timeout:uint = 30; // TODO: Get from the config or attribute.
         _socket.timeout = timeout * 1000;
 
         _socket.addEventListener(Event.CONNECT, _socket_connectOperationComplete);
@@ -76,41 +93,34 @@ public class SocketChannel implements IChannel {
         _socket.addEventListener(Event.CLOSE, _socket_closeEventHandler);
         _socket.addEventListener(SecurityErrorEvent.SECURITY_ERROR, _socket_securityErrorEventHandler);
 
-        _connectFuture = _connectFuture || new DefaultChannelPromise(this);
-        _pipeline = _pipeline || new DefaultChannelPipeline(this);
-
         _socket.connect(host, port);
 
-        return _connectFuture;
+        return ch.connectFuture;
     }
 
     /** @private EventHandler */
     private function _socket_securityErrorEventHandler(event:SecurityErrorEvent):void {
         // Security | timeout error.
         var error:Error = new SecurityError((event as SecurityErrorEvent).text, (event as SecurityErrorEvent).errorID);
-        _pipeline.fireErrorCaught(error);
+        channel.pipeline.fireErrorCaught(error);
     }
 
     /** @private EventHandler */
     private function _socket_connectOperationComplete(event:Event):void {
         _socket.removeEventListener(Event.CONNECT, _socket_connectOperationComplete);
 
-        var eventData:* = _connectFuture.channel;
+        var eventData:* = ch;
 
         if (_socket.connected) {
             _socket.flush();
             // Notify channel active during pipeline.
-            _pipeline.fireChannelActive();
+            channel.pipeline.fireChannelActive();
 
             // Mark free w.
-            _bWritable = true;
-
-            // FIXME(Test):
-            _socket.writeUTFBytes("GET / HTTP/1.1\n\n");
-            _socket.flush();
+            ch.setWritable(true);
         }
 
-        _connectFuture.dispatchEvent(new ChannelFutureEvent(eventData));
+        ch.connectFuture.dispatchEvent(new ChannelFutureEvent(eventData));
     }
 
     /** @private EventHandler */
@@ -126,7 +136,7 @@ public class SocketChannel implements IChannel {
 
     /** @private EventHandler */
     private function _socket_ioErrorEventHandler(event:IOErrorEvent):void {
-        _pipeline.fireErrorCaught(new IOError(event.text, event.errorID));
+        channel.pipeline.fireErrorCaught(new IOError(event.text, event.errorID));
     }
 
     /** @private EventHandler */
@@ -140,36 +150,8 @@ public class SocketChannel implements IChannel {
         _socket.readBytes(bytes, 0, _socket.bytesAvailable);
         bytes.position = 0;
 
-        _bReadable = true;
-        _pipeline.fireChannelRead(bytes);
+        ch.setReadable(true);
+        channel.pipeline.fireChannelRead(bytes);
     }
 
-    public function disconnect(promise:IChannelPromise = null):IChannelFuture {
-        return null;
-    }
-
-    public function close(promise:IChannelPromise = null):IChannelFuture {
-        _socket.close();
-        return _closeFuture;
-    }
-
-    public function read():IChannel {
-        return null;
-    }
-
-    public function write(msg:*, promise:IChannelPromise = null):IChannelFuture {
-        return null;
-    }
-
-    public function flush():IChannel {
-        if (_socket)
-            _socket.flush();
-        return this;
-    }
-
-    public function writeAndFlush(msg:*, promise:IChannelPromise = null):IChannelFuture {
-        return null;
-    }
-
-}
 }

@@ -11,6 +11,8 @@ public interface IChannel {
     /** Return the parent of this channel. */
     function get parent():IChannel;
 
+    function get unsafe():IUnsafe;
+
     function get isOpen():Boolean;
 
     function get isActive():Boolean;

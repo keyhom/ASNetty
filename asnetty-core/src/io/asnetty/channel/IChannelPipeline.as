@@ -18,11 +18,11 @@ public interface IChannelPipeline {
 
     function addAfter(baseName:String, name:String, handler:IChannelHandler):IChannelPipeline;
 
-    function remove(handler:IChannelHandler):IChannelHandler;
+    function remove(handler:IChannelHandler):IChannelPipeline;
 
-    function removeByName(name:String):IChannelHandler;
+    function removeByName(name:String):IChannelPipeline;
 
-    function removeByType(clazz:Class):Vector.<IChannelHandler>;
+    function removeByType(clazz:Class):IChannelPipeline;
 
     function removeFirst():IChannelHandler;
 
@@ -45,12 +45,6 @@ public interface IChannelPipeline {
     function get names():Vector.<String>;
 
     function toMap():Dictionary;
-
-    /**
-     * Retrieves the target <code>IChannelHandler</code> by the specified
-     * <code>byWhat</code> parameter, it can be a name, or a class type.
-     */
-    function getHandler(byWhat:*):IChannelHandler;
 
     /**
      * Returns the context object of the specified <code>nameOrInstanceOrClass</code>
@@ -79,7 +73,7 @@ public interface IChannelPipeline {
 
     function read():IChannelPipeline;
 
-    function write(msg:*, promise:IChannelPromise = null):IChannelPipeline;
+    function write(msg:*, promise:IChannelPromise = null):IChannelFuture;
 
     function flush():IChannelPipeline;
 
