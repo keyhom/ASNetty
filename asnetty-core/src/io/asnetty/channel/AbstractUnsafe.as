@@ -5,8 +5,11 @@ package io.asnetty.channel {
  */
 public class AbstractUnsafe implements IUnsafe {
 
+    private static var CLOSED_CHANNEL_EXCEPTION:Error = new Error("Write to closed channel.");
+
     /** @private */
     private var _channel:AbstractChannel;
+    private var _outboundBuffer:ChannelOutboundBuffer;
 
     /**
      * Constructor
@@ -14,6 +17,11 @@ public class AbstractUnsafe implements IUnsafe {
     public function AbstractUnsafe(channel:AbstractChannel) {
         super();
         this._channel = channel;
+        this._outboundBuffer = new ChannelOutboundBuffer(channel);
+    }
+
+    public function get outboundBuffer():ChannelOutboundBuffer {
+        return _outboundBuffer;
     }
 
     public function get channel():AbstractChannel {
@@ -40,7 +48,7 @@ public class AbstractUnsafe implements IUnsafe {
         }
     }
 
-    protected virtual function doClose():void {
+    protected function doClose():void {
         // NOOP.
     }
 
@@ -49,11 +57,40 @@ public class AbstractUnsafe implements IUnsafe {
     }
 
     public function write(msg:*, promise:IChannelPromise):void {
+        const outboundBuffer:ChannelOutboundBuffer = this._outboundBuffer;
 
+        if (!outboundBuffer) {
+            this.safeSetFailure(promise, CLOSED_CHANNEL_EXCEPTION);
+            return;
+        }
+
+        var size:int = 0;
+
+        try {
+            msg = this.filteredOutboundMessage(msg);
+            size = channel.estimatorHandle.size(msg);
+        } catch (e:Error) {
+            safeSetFailure(promise, e);
+            return;
+        }
+
+        outboundBuffer.addMessage(msg, size, promise);
     }
 
     public function flush():void {
 
+    }
+
+    protected function filteredOutboundMessage(msg:*):* {
+        return msg;
+    }
+
+    protected function safeSetFailure(promise:IChannelPromise, cause:Error):void {
+        // TODO: safeSetFailure
+    }
+
+    protected function safeSetSuccess(promise:IChannelPromise):void {
+        // TODO: safeSetSuccess
     }
 
 }

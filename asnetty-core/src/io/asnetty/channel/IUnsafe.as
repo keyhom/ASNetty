@@ -19,6 +19,7 @@ public interface IUnsafe {
 
     function flush():void;
 
-    // TODO: channel outbound buffer ?
+    function get outboundBuffer():ChannelOutboundBuffer;
+
 }
 }

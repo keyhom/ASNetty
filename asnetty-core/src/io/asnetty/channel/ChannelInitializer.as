@@ -1,11 +1,9 @@
 package io.asnetty.channel {
 
-import io.asnetty.handler.IChannelHandlerContext;
-
 /**
  * @author Jeremy
  */
-public class ChannelInitializer extends ChannelHandlerAdapter {
+public class ChannelInitializer extends ChannelInboundHandlerAdapter {
 
     /**
      * Constructor

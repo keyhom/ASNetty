@@ -12,7 +12,7 @@ public class SocketChannel extends AbstractChannel implements IChannel {
      * Constructs by the specified host and port.
      */
     public function SocketChannel() {
-        super(new SocketChannelUnsafe(this));
+        super(new SocketChannelUnsafe(this), null);
         _connectFuture = new DefaultChannelPromise(this);
         _closeFuture = new DefaultChannelPromise(this);
     }
@@ -49,8 +49,6 @@ import flash.net.Socket;
 import flash.utils.ByteArray;
 
 import io.asnetty.channel.AbstractUnsafe;
-import io.asnetty.channel.ChannelFutureEvent;
-import io.asnetty.channel.IChannelFuture;
 import io.asnetty.channel.IChannelPromise;
 import io.asnetty.channel.SocketChannel;
 
@@ -78,10 +76,10 @@ class SocketChannelUnsafe extends AbstractUnsafe {
     }
 
     override public function connect(host:String, port:int, promise:IChannelPromise):void {
-        doConnect(host, port);
+        doConnect(host, port, promise);
     }
 
-    protected function doConnect(host:String, port:int):IChannelFuture {
+    protected function doConnect(host:String, port:int, promise:IChannelPromise):void {
         _socket = _socket || new Socket();
         var timeout:uint = 30; // TODO: Get from the config or attribute.
         _socket.timeout = timeout * 1000;
@@ -95,7 +93,27 @@ class SocketChannelUnsafe extends AbstractUnsafe {
 
         _socket.connect(host, port);
 
-        return ch.connectFuture;
+        /** @private EventHandler */
+        function _socket_connectOperationComplete(event:Event):void {
+            _socket.removeEventListener(Event.CONNECT, _socket_connectOperationComplete);
+
+            if (_socket.connected) {
+                _socket.flush();
+                // Notify channel active during pipeline.
+                channel.pipeline.fireChannelActive();
+
+                // Mark free w.
+                ch.setWritable(true);
+            }
+
+            promise.setSuccess();
+        }
+    }
+
+    override protected function doClose():void {
+        super.doClose();
+        // TODO: close the socket.
+        _socket.close();
     }
 
     /** @private EventHandler */
@@ -103,24 +121,6 @@ class SocketChannelUnsafe extends AbstractUnsafe {
         // Security | timeout error.
         var error:Error = new SecurityError((event as SecurityErrorEvent).text, (event as SecurityErrorEvent).errorID);
         channel.pipeline.fireErrorCaught(error);
-    }
-
-    /** @private EventHandler */
-    private function _socket_connectOperationComplete(event:Event):void {
-        _socket.removeEventListener(Event.CONNECT, _socket_connectOperationComplete);
-
-        var eventData:* = ch;
-
-        if (_socket.connected) {
-            _socket.flush();
-            // Notify channel active during pipeline.
-            channel.pipeline.fireChannelActive();
-
-            // Mark free w.
-            ch.setWritable(true);
-        }
-
-        ch.connectFuture.dispatchEvent(new ChannelFutureEvent(eventData));
     }
 
     /** @private EventHandler */

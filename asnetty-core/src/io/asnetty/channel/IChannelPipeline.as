@@ -2,9 +2,6 @@ package io.asnetty.channel {
 
 import flash.utils.Dictionary;
 
-import io.asnetty.handler.IChannelHandler;
-import io.asnetty.handler.IChannelHandlerContext;
-
 /**
  * @author Jeremy
  */

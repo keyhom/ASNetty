@@ -11,8 +11,8 @@ import flash.events.EventDispatcher;
 import io.asnetty.channel.ChannelFutureEvent;
 import io.asnetty.channel.IChannel;
 import io.asnetty.channel.IChannelFuture;
+import io.asnetty.channel.IChannelHandler;
 import io.asnetty.channel.IChannelPipeline;
-import io.asnetty.handler.IChannelHandler;
 
 [Event(name="complete", type="flash.events.Event")]
 /**
@@ -44,7 +44,7 @@ public class Bootstrap extends EventDispatcher {
     public function connect(host:String, port:uint):IChannelFuture {
         _validate();
 
-        var channel:IChannel = new _channelClass();
+        const channel:IChannel = new _channelClass();
 
         const pipeline:IChannelPipeline = channel.pipeline;
         if (!pipeline)
@@ -52,17 +52,16 @@ public class Bootstrap extends EventDispatcher {
 
         pipeline.addLast(getQualifiedClassName(_handler), _handler);
 
-        var future:IChannelFuture = channel.connect(host, port);
-
-        future.addEventListener(ChannelFutureEvent.OPERATION_COMPLETE, _future_operationComplete, false, 0, true);
+        const future:IChannelFuture = channel.connect(host, port);
+        future.addEventListener(ChannelFutureEvent.OPERATION_COMPLETE, _future_operationComplete);
 
         function _future_operationComplete(event:ChannelFutureEvent):void {
-            future.removeEventListener(event.type, _future_operationComplete);
+            event.future.removeEventListener(event.type, _future_operationComplete);
 
-            if (event.data is Error) {
-                // connected error.
-            } else if (future.channel.isOpen) {
-                // connected success.
+            if (event.future.channel.isOpen) {
+                // Connected.
+            } else {
+                // Error caught.
             }
         }
 

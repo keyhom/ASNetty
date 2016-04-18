@@ -9,7 +9,7 @@ public class DefaultChannelPromise extends EventDispatcher implements IChannelPr
 
     private var _channel:IChannel;
 
-    public function DefaultChannelPromise(channel:IChannel = null) {
+    public function DefaultChannelPromise(channel:IChannel) {
         super();
         this._channel = channel;
     }
@@ -31,13 +31,14 @@ public class DefaultChannelPromise extends EventDispatcher implements IChannelPr
     }
 
     public function setSuccess():IChannelPromise {
-        dispatchEvent(new ChannelFutureEvent(_channel));
+        dispatchEvent(new ChannelFutureEvent);
         return this;
     }
 
     public function setFailure(cause:Error = null):IChannelPromise {
         cause = cause || new Error("setFailure");
-        dispatchEvent(new ChannelFutureEvent(cause));
+        // TODO: Error caught handle.
+        dispatchEvent(new ChannelFutureEvent);
         return this;
     }
 

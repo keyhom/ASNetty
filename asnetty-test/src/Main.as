@@ -53,10 +53,12 @@ public class Main extends Sprite {
 }
 
 import io.asnetty.channel.ChannelHandlerAdapter;
+import io.asnetty.channel.IChannelInboundHandler;
+import io.asnetty.channel.IChannelOutboundHandler;
 import io.asnetty.channel.IChannelPromise;
-import io.asnetty.handler.IChannelHandlerContext;
+import io.asnetty.channel.IChannelHandlerContext;
 
-class TestChannelHandler extends ChannelHandlerAdapter {
+class TestChannelHandler extends ChannelHandlerAdapter implements IChannelInboundHandler, IChannelOutboundHandler {
 
     function TestChannelHandler() {
         super();
@@ -67,59 +69,59 @@ class TestChannelHandler extends ChannelHandlerAdapter {
         super.errorCaught(ctx, cause);
     }
 
-    override public function channelActive(ctx:IChannelHandlerContext):void {
+    public function channelActive(ctx:IChannelHandlerContext):void {
         trace("TEST channelActive.");
-        super.channelActive(ctx);
+        ctx.fireChannelActive();
     }
 
-    override public function channelInactive(ctx:IChannelHandlerContext):void {
+    public function channelInactive(ctx:IChannelHandlerContext):void {
         trace("TEST channelInactive.");
-        super.channelInactive(ctx);
+        ctx.fireChannelInactive();
     }
 
-    override public function channelRead(ctx:IChannelHandlerContext, msg:*):void {
+    public function channelRead(ctx:IChannelHandlerContext, msg:*):void {
         trace("TEST channelRead: ", msg);
-        super.channelRead(ctx, msg);
+        ctx.fireChannelRead(msg);
     }
 
-    override public function channelReadComplete(ctx:IChannelHandlerContext):void {
+    public function channelReadComplete(ctx:IChannelHandlerContext):void {
         trace("TEST channelReadComplete.");
-        super.channelReadComplete(ctx);
+        ctx.fireChannelReadComplete();
     }
 
-    override public function channelWritabilityChanged(ctx:IChannelHandlerContext):void {
+    public function channelWritabilityChanged(ctx:IChannelHandlerContext):void {
         trace("TEST channelWrite.");
-        super.channelWritabilityChanged(ctx);
+        ctx.fireChannelWritabilityChanged();
     }
 
-    override public function connect(ctx:IChannelHandlerContext, host:String, port:int, promise:IChannelPromise = null):void {
+    public function connect(ctx:IChannelHandlerContext, host:String, port:int, promise:IChannelPromise = null):void {
         trace("TEST connect.");
-        super.connect(ctx, host, port, promise);
+        ctx.makeConnect(host, port, promise);
     }
 
-    override public function disconnect(ctx:IChannelHandlerContext, promise:IChannelPromise = null):void {
+    public function disconnect(ctx:IChannelHandlerContext, promise:IChannelPromise = null):void {
         trace("TEST disconnect.");
-        super.disconnect(ctx, promise);
+        ctx.makeDisconnect(promise);
     }
 
-    override public function close(ctx:IChannelHandlerContext, promise:IChannelPromise = null):void {
+    public function close(ctx:IChannelHandlerContext, promise:IChannelPromise = null):void {
         trace("TEST close.");
-        super.close(ctx, promise);
+        ctx.makeClose(promise);
     }
 
-    override public function read(ctx:IChannelHandlerContext):void {
+    public function read(ctx:IChannelHandlerContext):void {
         trace("TEST read.");
-        super.read(ctx);
+        ctx.makeRead();
     }
 
-    override public function write(ctx:IChannelHandlerContext, msg:*, promise:IChannelPromise = null):void {
+    public function write(ctx:IChannelHandlerContext, msg:*, promise:IChannelPromise = null):void {
         trace("TEST write.");
-        super.write(ctx, msg, promise);
+        ctx.makeWrite(msg, promise);
     }
 
-    override public function flush(ctx:IChannelHandlerContext):void {
+    public function flush(ctx:IChannelHandlerContext):void {
         trace("TEST flush.");
-        super.flush(ctx);
+        ctx.makeFlush();
     }
 
 }

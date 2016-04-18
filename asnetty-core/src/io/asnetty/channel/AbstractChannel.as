@@ -12,7 +12,9 @@ public class AbstractChannel implements IChannel {
     private var _id:int;
     private var _pipeline:IChannelPipeline;
     private var _parent:IChannel;
+    private var _config:IChannelConfig;
     private var _unsafe:IUnsafe;
+    private var _estimatorHandle:IMessageSizeEstimateHandle;
 
     private var _bActive:Boolean;
     private var _bWritable:Boolean;
@@ -21,13 +23,20 @@ public class AbstractChannel implements IChannel {
     /**
      * Constructor
      */
-    public function AbstractChannel(unsafe:IUnsafe) {
+    public function AbstractChannel(unsafe:IUnsafe, config:IChannelConfig) {
         super();
+
+        if (!unsafe)
+            throw new Error("unsafe can't be null.");
+
+        if (!config)
+            throw new Error("config can't be null.");
 
         this._id = ++__INSTANCE_ID;
         this._bActive = false;
         this._bWritable = this._bReadable = false;
         this._unsafe = unsafe;
+        this._config = config;
         this._pipeline = new DefaultChannelPipeline(this);
     }
 
@@ -41,6 +50,10 @@ public class AbstractChannel implements IChannel {
 
     public function get parent():IChannel {
         return _parent;
+    }
+
+    public function get config():IChannelConfig {
+        return _config;
     }
 
     public function get unsafe():IUnsafe {
@@ -99,6 +112,13 @@ public class AbstractChannel implements IChannel {
 
     public function writeAndFlush(msg:*, promise:IChannelPromise = null):IChannelFuture {
         return _pipeline.writeAndFlush(msg, promise);
+    }
+
+    final internal function get estimatorHandle():IMessageSizeEstimateHandle {
+        if (!_estimatorHandle) {
+            _estimatorHandle = config.messageSizeEstimator.newHandle();
+        }
+        return _estimatorHandle;
     }
 
 }

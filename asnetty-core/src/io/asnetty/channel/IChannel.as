@@ -8,8 +8,11 @@ public interface IChannel {
     /** Returns the globally unique identifier of this {@link IChannel} */
     function get id():uint;
 
-    /** Return the parent of this channel. */
+    /** Returns the parent of this channel. */
     function get parent():IChannel;
+
+    /** Returns the config of this channel. */
+    function get config():IChannelConfig;
 
     function get unsafe():IUnsafe;
 

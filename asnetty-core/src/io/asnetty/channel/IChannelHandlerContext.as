@@ -1,9 +1,8 @@
-package io.asnetty.handler {
-import io.asnetty.channel.IChannel;
-import io.asnetty.channel.IChannelFuture;
-import io.asnetty.channel.IChannelPipeline;
-import io.asnetty.channel.IChannelPromise;
+package io.asnetty.channel {
 
+/**
+ * @author Jeremy
+ */
 public interface IChannelHandlerContext {
 
     function get handler():IChannelHandler;
