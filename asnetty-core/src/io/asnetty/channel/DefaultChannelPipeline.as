@@ -282,8 +282,9 @@ public class DefaultChannelPipeline implements IChannelPipeline {
     public function fireChannelActive():IChannelPipeline {
         _head.fireChannelActive();
 
-        // TODO: Determines autoread need if condition limited..
-        channel.read();
+        if (channel.config.autoRead) {
+            channel.read();
+        }
 
         return this;
     }
@@ -305,8 +306,8 @@ public class DefaultChannelPipeline implements IChannelPipeline {
 
     public function fireChannelReadComplete():IChannelPipeline {
         _head.fireChannelReadComplete();
-        // TODO: Determines autoread need if condition limited.
-        read();
+        if (channel.config.autoRead)
+            read();
         return this;
     }
 

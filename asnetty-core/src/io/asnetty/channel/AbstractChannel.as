@@ -85,6 +85,7 @@ public class AbstractChannel implements IChannel {
     }
 
     public function connect(host:String, port:int, timeout:Number = 30):IChannelFuture {
+        config.connectTimeoutMillis = timeout * 1000;
         return _pipeline.connect(host, port);
     }
 
@@ -119,6 +120,10 @@ public class AbstractChannel implements IChannel {
             _estimatorHandle = config.messageSizeEstimator.newHandle();
         }
         return _estimatorHandle;
+    }
+
+    internal function doWrite(outboundBuffer:ChannelOutboundBuffer):void {
+        // NOOP.
     }
 
 }

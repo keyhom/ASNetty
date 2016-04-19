@@ -1,4 +1,6 @@
 package io.asnetty.channel {
+import flash.net.Socket;
+import flash.utils.ByteArray;
 
 /**
  * @author Jeremy
@@ -7,14 +9,24 @@ public class SocketChannel extends AbstractChannel implements IChannel {
 
     private var _connectFuture:IChannelFuture;
     private var _closeFuture:IChannelFuture;
+    private var _socket:Socket;
 
     /**
      * Constructs by the specified host and port.
      */
     public function SocketChannel() {
-        super(new SocketChannelUnsafe(this), null);
+        super(new SocketChannelUnsafe(this), new DefaultChannelConfig(this));
         _connectFuture = new DefaultChannelPromise(this);
         _closeFuture = new DefaultChannelPromise(this);
+        _socket = new Socket();
+    }
+
+    public function get socket():Socket {
+        return _socket;
+    }
+
+    override public function get isActive():Boolean {
+        return _socket && _socket.connected;
     }
 
     override public function get isOpen():Boolean {
@@ -37,6 +49,20 @@ public class SocketChannel extends AbstractChannel implements IChannel {
         this.readable = value;
     }
 
+    override internal function doWrite(outboundBuffer:ChannelOutboundBuffer):void {
+        super.doWrite(outboundBuffer);
+
+        const current:* = outboundBuffer.current;
+        if (current is ByteArray) {
+            const ba:ByteArray = current as ByteArray;
+            _socket.writeBytes(ba);
+        } else if (current is String) {
+            const str:String = String(current);
+            _socket.writeUTFBytes(str);
+        } else {
+            // Unknown how to write it.
+        }
+    }
 }
 }
 
@@ -49,6 +75,8 @@ import flash.net.Socket;
 import flash.utils.ByteArray;
 
 import io.asnetty.channel.AbstractUnsafe;
+import io.asnetty.channel.IChannelConfig;
+import io.asnetty.channel.IChannelPipeline;
 import io.asnetty.channel.IChannelPromise;
 import io.asnetty.channel.SocketChannel;
 
@@ -58,8 +86,6 @@ import io.asnetty.channel.SocketChannel;
  */
 class SocketChannelUnsafe extends AbstractUnsafe {
 
-    private var _socket:Socket;
-
     /**
      * Constructor
      */
@@ -67,10 +93,16 @@ class SocketChannelUnsafe extends AbstractUnsafe {
         super(channel);
     }
 
-    public function get isOpen():Boolean {
-        return _socket && _socket.connected;
+    [Inline]
+    public function get socket():Socket {
+        return ch.socket;
     }
 
+    public function get isOpen():Boolean {
+        return socket && socket.connected;
+    }
+
+    [Inline]
     protected function get ch():SocketChannel {
         return channel as SocketChannel;
     }
@@ -80,9 +112,8 @@ class SocketChannelUnsafe extends AbstractUnsafe {
     }
 
     protected function doConnect(host:String, port:int, promise:IChannelPromise):void {
-        _socket = _socket || new Socket();
-        var timeout:uint = 30; // TODO: Get from the config or attribute.
-        _socket.timeout = timeout * 1000;
+        const _socket:Socket = this.socket;
+        _socket.timeout = channel.config.connectTimeoutMillis;
 
         _socket.addEventListener(Event.CONNECT, _socket_connectOperationComplete);
 
@@ -110,10 +141,14 @@ class SocketChannelUnsafe extends AbstractUnsafe {
         }
     }
 
+    override protected function doDisconnect():void {
+        super.doDisconnect();
+        doClose();
+    }
+
     override protected function doClose():void {
         super.doClose();
-        // TODO: close the socket.
-        _socket.close();
+        socket.close();
     }
 
     /** @private EventHandler */
@@ -125,7 +160,7 @@ class SocketChannelUnsafe extends AbstractUnsafe {
 
     /** @private EventHandler */
     private function _socket_closeEventHandler(event:Event):void {
-        var theSocket:Socket = _socket || event.currentTarget as Socket;
+        var theSocket:Socket = socket || event.currentTarget as Socket;
         theSocket.removeEventListener(Event.CLOSE, _socket_closeEventHandler);
         theSocket.removeEventListener(ProgressEvent.SOCKET_DATA, _socket_dataEventHandler);
         theSocket.removeEventListener(IOErrorEvent.IO_ERROR, _socket_ioErrorEventHandler);
@@ -142,16 +177,24 @@ class SocketChannelUnsafe extends AbstractUnsafe {
     /** @private EventHandler */
     private function _socket_dataEventHandler(event:ProgressEvent):void {
         // data recv.
-        if (!_socket.connected || !_socket.bytesAvailable) {
+        if (!socket.connected || !socket.bytesAvailable) {
             return;
         }
 
         var bytes:ByteArray = new ByteArray();
-        _socket.readBytes(bytes, 0, _socket.bytesAvailable);
+        socket.readBytes(bytes, 0, socket.bytesAvailable);
         bytes.position = 0;
 
         ch.setReadable(true);
-        channel.pipeline.fireChannelRead(bytes);
+
+        const config:IChannelConfig = channel.config;
+        if (!config.autoRead)
+            return;
+
+        const pipeline:IChannelPipeline = channel.pipeline;
+
+        pipeline.fireChannelRead(bytes);
+        pipeline.fireChannelReadComplete();
     }
 
 }

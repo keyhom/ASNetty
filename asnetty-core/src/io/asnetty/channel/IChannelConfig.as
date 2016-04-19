@@ -9,11 +9,11 @@ import flash.utils.Dictionary;
 public interface IChannelConfig {
 
     /** Returns all set channel option's. */
-    function getOptions():Dictionary;
+    function getOptions(... args):Object;
 
     /** Sets the configuration properties from the specified
      * <code>options</code>. */
-    function setOptions(options:Dictionary):Boolean;
+    function setOptions(options:Object):Boolean;
 
     /**
      * Returns the value of the given <code>key</code>.
@@ -25,9 +25,9 @@ public interface IChannelConfig {
      */
     function setOption(key:*, value:*):Boolean;
 
-    function get connectTimoutMillis():Number;
+    function get connectTimeoutMillis():Number;
 
-    function set connectTimoutMillis(value:Number):void;
+    function set connectTimeoutMillis(value:Number):void;
 
     function get writeSpinCount():int;
 

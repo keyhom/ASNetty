@@ -39,24 +39,28 @@ public class Main extends Sprite {
 
         })).connect("www.baidu.com", 80);
 
-        f.addEventListener(ChannelFutureEvent.OPERATION_COMPLETE, function (event:ChannelFutureEvent):void {
+        var operationComplete:Function;
+        f.addEventListener(ChannelFutureEvent.OPERATION_COMPLETE, operationComplete = function (event:ChannelFutureEvent):void {
+            f.removeEventListener(ChannelFutureEvent.OPERATION_COMPLETE, operationComplete);
             trace("Operation Completed.");
 
             var bs:ByteArray = new ByteArray();
-            bs.writeUTFBytes("GET / HTTP/1.1\n\n");
-            f.channel.write(bs);
-
-        }, false, 0, true);
+            var str:String = "GET / HTTP/1.1\r\n";
+            str += "Host: www.baidu.com\r\n";
+            str += "Connection: Keep-Alive\r\n";
+            bs.writeUTFBytes(str + "\r\n");
+            f.channel.writeAndFlush(bs);
+        });
     }
 
 }
 }
 
 import io.asnetty.channel.ChannelHandlerAdapter;
+import io.asnetty.channel.IChannelHandlerContext;
 import io.asnetty.channel.IChannelInboundHandler;
 import io.asnetty.channel.IChannelOutboundHandler;
 import io.asnetty.channel.IChannelPromise;
-import io.asnetty.channel.IChannelHandlerContext;
 
 class TestChannelHandler extends ChannelHandlerAdapter implements IChannelInboundHandler, IChannelOutboundHandler {
 

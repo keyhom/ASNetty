@@ -41,7 +41,7 @@ public class Bootstrap extends EventDispatcher {
         return this;
     }
 
-    public function connect(host:String, port:uint):IChannelFuture {
+    public function connect(host:String, port:uint, timeout:Number = 30):IChannelFuture {
         _validate();
 
         const channel:IChannel = new _channelClass();
@@ -52,7 +52,7 @@ public class Bootstrap extends EventDispatcher {
 
         pipeline.addLast(getQualifiedClassName(_handler), _handler);
 
-        const future:IChannelFuture = channel.connect(host, port);
+        const future:IChannelFuture = channel.connect(host, port, timeout);
         future.addEventListener(ChannelFutureEvent.OPERATION_COMPLETE, _future_operationComplete);
 
         function _future_operationComplete(event:ChannelFutureEvent):void {
