@@ -1,6 +1,9 @@
 package io.asnetty.handler.codec {
 
+import flash.utils.ByteArray;
+
 import io.asnetty.channel.ChannelInboundHandlerAdapter;
+import io.asnetty.channel.IChannelHandlerContext;
 
 /**
  *
@@ -15,11 +18,11 @@ public class ByteToMessageDecoder extends ChannelInboundHandlerAdapter {
         super();
     }
 
-    override public function handlerAdded():void {
+    override public function handlerAdded(ctx:IChannelHandlerContext):void {
         // TODO: initialization.
     }
 
-    override public function handlerRemoved():void {
+    override public function handlerRemoved(ctx:IChannelHandlerContext):void {
         // TODO: free up.
     }
 
@@ -32,12 +35,14 @@ public class ByteToMessageDecoder extends ChannelInboundHandlerAdapter {
         // TODO: mark or reset read flags.
         // TODO: handle decode states.
         if (!ctx.channel.config.autoRead)
-            ctx.read();
+            ctx.makeRead();
         ctx.fireChannelReadComplete();
     }
 
     protected virtual function decode(ctx:IChannelHandlerContext,
-            raw:ByteArray, out:Vector.<Object>);
+                                      raw:ByteArray, out:Vector.<Object>):void {
+
+    }
 
 } // class ByteToMessageDecoder
 }
