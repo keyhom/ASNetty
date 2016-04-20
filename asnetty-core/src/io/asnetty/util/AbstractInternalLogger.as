@@ -84,7 +84,7 @@ public class AbstractInternalLogger implements InternalLogger {
             applyArgs.unshift(ERROR_MESSAGE);
         }
 
-        doTrace.apply(this, applyArgs);
+        doTrace.apply(null, applyArgs);
     }
 
     protected function doTrace(format:String, ...args):void {
@@ -105,7 +105,7 @@ public class AbstractInternalLogger implements InternalLogger {
             applyArgs.unshift(ERROR_MESSAGE);
         }
 
-        doDebug.apply(this, applyArgs);
+        doDebug.apply(null, applyArgs);
     }
 
     protected function doDebug(format:String, ...args):void {
@@ -126,7 +126,7 @@ public class AbstractInternalLogger implements InternalLogger {
             applyArgs.unshift(ERROR_MESSAGE);
         }
 
-        doInfo.apply(this, applyArgs);
+        doInfo.apply(null, applyArgs);
     }
 
     protected function doInfo(format:String, ...args):void {
@@ -147,7 +147,7 @@ public class AbstractInternalLogger implements InternalLogger {
             applyArgs.unshift(ERROR_MESSAGE);
         }
 
-        doWarn.apply(this, applyArgs);
+        doWarn.apply(null, applyArgs);
     }
 
     protected function doWarn(format:String, ...args):void {
@@ -168,7 +168,7 @@ public class AbstractInternalLogger implements InternalLogger {
             applyArgs.unshift(ERROR_MESSAGE);
         }
 
-        doError.apply(this, applyArgs);
+        doError.apply(null, applyArgs);
     }
 
     protected function doError(format:String, ...args):void {

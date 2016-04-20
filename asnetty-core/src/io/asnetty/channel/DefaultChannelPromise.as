@@ -70,7 +70,7 @@ public class DefaultChannelPromise extends EventDispatcher implements IChannelPr
     public function get isSuccess():Boolean {
         if (null == _result || UNCANCELLABLE == _result)
             return false;
-        return true;
+        return !(_result is Error);
     }
 
     public function get cause():Error {

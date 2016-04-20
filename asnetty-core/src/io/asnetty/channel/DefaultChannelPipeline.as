@@ -371,7 +371,6 @@ class DefaultChannelHandlerContext implements IChannelHandlerContext {
     private var _handler:IChannelHandler;
     private var _pipeline:DefaultChannelPipeline;
     private var _handlerRemoved:Boolean;
-    private var _succeededFuture:IChannelFuture;
 
     public var prev:DefaultChannelHandlerContext;
     public var next:DefaultChannelHandlerContext;
@@ -430,7 +429,7 @@ class DefaultChannelHandlerContext implements IChannelHandlerContext {
     }
 
     public function fireErrorCaught(cause:Error):IChannelHandlerContext {
-        const next:DefaultChannelHandlerContext = next;
+        const next:DefaultChannelHandlerContext = findContextInbound();
         next.invokeErrorCaught(cause);
         return this;
     }

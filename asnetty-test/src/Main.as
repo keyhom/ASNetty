@@ -11,6 +11,7 @@ import io.asnetty.channel.IChannel;
 import io.asnetty.channel.IChannelFuture;
 import io.asnetty.channel.IChannelPipeline;
 import io.asnetty.channel.SocketChannel;
+import io.asnetty.handler.logging.LoggingHandler;
 
 public class Main extends Sprite {
 
@@ -35,98 +36,44 @@ public class Main extends Sprite {
             const pipeline:IChannelPipeline = ch.pipeline;
             trace("Channel initializer callbacks.");
 
+            pipeline.addLast("LoggingHandler", new LoggingHandler());
             pipeline.addLast("TestHandler", new TestChannelHandler());
 
-        })).connect("www.baidu.com", 80);
+        })).connect("www.qifun.com", 80, 2);
 
-        var operationComplete:Function;
-        f.addEventListener(ChannelFutureEvent.OPERATION_COMPLETE, operationComplete = function (event:ChannelFutureEvent):void {
-            f.removeEventListener(ChannelFutureEvent.OPERATION_COMPLETE, operationComplete);
+        f.addEventListener(ChannelFutureEvent.OPERATION_COMPLETE, function (event:ChannelFutureEvent):void {
+            f.removeEventListener(ChannelFutureEvent.OPERATION_COMPLETE, arguments.callee);
             trace("Operation Completed.");
 
-            var bs:ByteArray = new ByteArray();
-            var str:String = "GET / HTTP/1.1\r\n";
-            str += "Host: www.baidu.com\r\n";
-            str += "Connection: Keep-Alive\r\n";
-            bs.writeUTFBytes(str + "\r\n");
-            f.channel.writeAndFlush(bs);
+            if (f.isSuccess) {
+                trace("Connected successfuly.");
+                var bs:ByteArray = new ByteArray();
+                var str:String = "GET / HTTP/1.1\r\n";
+                str += "Host: www.baidu.com\r\n";
+                str += "Connection: Keep-Alive\r\n";
+                bs.writeUTFBytes(str + "\r\n");
+                f.channel.writeAndFlush(bs);
+            } else {
+                trace("Connected failed: ", f.cause.toString());
+            }
         });
     }
 
 }
 }
 
-import io.asnetty.channel.ChannelHandlerAdapter;
+import io.asnetty.channel.ChannelDuplexHandler;
 import io.asnetty.channel.IChannelHandlerContext;
-import io.asnetty.channel.IChannelInboundHandler;
-import io.asnetty.channel.IChannelOutboundHandler;
-import io.asnetty.channel.IChannelPromise;
 
-class TestChannelHandler extends ChannelHandlerAdapter implements IChannelInboundHandler, IChannelOutboundHandler {
+class TestChannelHandler extends ChannelDuplexHandler {
 
     function TestChannelHandler() {
         super();
     }
 
-    override public function errorCaught(ctx:IChannelHandlerContext, cause:Error):void {
-        trace("TEST channelException.");
-        super.errorCaught(ctx, cause);
-    }
-
-    public function channelActive(ctx:IChannelHandlerContext):void {
-        trace("TEST channelActive.");
-        ctx.fireChannelActive();
-    }
-
-    public function channelInactive(ctx:IChannelHandlerContext):void {
-        trace("TEST channelInactive.");
-        ctx.fireChannelInactive();
-    }
-
-    public function channelRead(ctx:IChannelHandlerContext, msg:*):void {
-        trace("TEST channelRead: ", msg);
-        ctx.fireChannelRead(msg);
-    }
-
-    public function channelReadComplete(ctx:IChannelHandlerContext):void {
-        trace("TEST channelReadComplete.");
+    override public function channelReadComplete(ctx:IChannelHandlerContext):void {
         ctx.fireChannelReadComplete();
         ctx.makeClose();
-    }
-
-    public function channelWritabilityChanged(ctx:IChannelHandlerContext):void {
-        trace("TEST channelWrite.");
-        ctx.fireChannelWritabilityChanged();
-    }
-
-    public function connect(ctx:IChannelHandlerContext, host:String, port:int, promise:IChannelPromise = null):void {
-        trace("TEST connect.");
-        ctx.makeConnect(host, port, promise);
-    }
-
-    public function disconnect(ctx:IChannelHandlerContext, promise:IChannelPromise = null):void {
-        trace("TEST disconnect.");
-        ctx.makeDisconnect(promise);
-    }
-
-    public function close(ctx:IChannelHandlerContext, promise:IChannelPromise = null):void {
-        trace("TEST close.");
-        ctx.makeClose(promise);
-    }
-
-    public function read(ctx:IChannelHandlerContext):void {
-        trace("TEST read.");
-        ctx.makeRead();
-    }
-
-    public function write(ctx:IChannelHandlerContext, msg:*, promise:IChannelPromise = null):void {
-        trace("TEST write.");
-        ctx.makeWrite(msg, promise);
-    }
-
-    public function flush(ctx:IChannelHandlerContext):void {
-        trace("TEST flush.");
-        ctx.makeFlush();
     }
 
 }

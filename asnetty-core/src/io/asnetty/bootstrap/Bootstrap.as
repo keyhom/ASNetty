@@ -4,7 +4,6 @@ import avmplus.getQualifiedClassName;
 
 import flash.events.EventDispatcher;
 
-import io.asnetty.channel.ChannelFutureEvent;
 import io.asnetty.channel.IChannel;
 import io.asnetty.channel.IChannelFuture;
 import io.asnetty.channel.IChannelHandler;
@@ -48,20 +47,7 @@ public class Bootstrap extends EventDispatcher {
 
         pipeline.addLast(getQualifiedClassName(_handler), _handler);
 
-        const future:IChannelFuture = channel.connect(host, port, timeout);
-        future.addEventListener(ChannelFutureEvent.OPERATION_COMPLETE, _future_operationComplete);
-
-        function _future_operationComplete(event:ChannelFutureEvent):void {
-            event.future.removeEventListener(event.type, _future_operationComplete);
-
-            if (event.future.channel.isOpen) {
-                // Connected.
-            } else {
-                // Error caught.
-            }
-        }
-
-        return future;
+        return channel.connect(host, port, timeout);
     }
 
     private function _validate():void {

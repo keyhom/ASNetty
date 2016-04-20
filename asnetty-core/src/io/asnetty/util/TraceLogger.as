@@ -32,35 +32,46 @@ public class TraceLogger extends AbstractInternalLogger {
         return true;
     }
 
-    override protected function doTrace(format:String, ... args):void {
+    override protected function doTrace(format:String, ...args):void {
         const tuple:FormattingTuple = MessageFormatter.applyFormat(format, args);
-        trace(tuple.message);
+        AS3Trace.consoleTrace(tuple.message);
         if (tuple.throwable) throw tuple.throwable;
     }
 
-    override protected function doDebug(format:String, ... args):void {
+    override protected function doDebug(format:String, ...args):void {
         const tuple:FormattingTuple = MessageFormatter.applyFormat(format, args);
-        trace(tuple.message);
+        AS3Trace.consoleTrace(tuple.message);
         if (tuple.throwable) throw tuple.throwable;
     }
 
-    override protected function doInfo(format:String, ... args):void {
+    override protected function doInfo(format:String, ...args):void {
         const tuple:FormattingTuple = MessageFormatter.applyFormat(format, args);
-        trace(tuple.message);
+        AS3Trace.consoleTrace(tuple.message);
         if (tuple.throwable) throw tuple.throwable;
     }
 
-    override protected function doWarn(format:String, ... args):void {
+    override protected function doWarn(format:String, ...args):void {
         const tuple:FormattingTuple = MessageFormatter.applyFormat(format, args);
-        trace(tuple.message);
+        AS3Trace.consoleTrace(tuple.message);
         if (tuple.throwable) throw tuple.throwable;
     }
 
-    override protected function doError(format:String, ... args):void {
+    override protected function doError(format:String, ...args):void {
         const tuple:FormattingTuple = MessageFormatter.applyFormat(format, args);
-        trace(tuple.message);
+        AS3Trace.consoleTrace(tuple.message);
         if (tuple.throwable) throw tuple.throwable;
     }
 
 } // class TraceLogger
+}
+
+final class AS3Trace {
+
+    public static function consoleTrace(...rest):void {
+        trace.apply(null, rest);
+    }
+
+    public function AS3Trace() {
+
+    }
 }

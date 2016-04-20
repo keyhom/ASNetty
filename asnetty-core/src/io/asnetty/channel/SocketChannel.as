@@ -57,10 +57,16 @@ public class SocketChannel extends AbstractChannel implements IChannel {
             // Unknown how to write it.
         }
     }
+
+    public function toString():String {
+        return "SocketChannel#" + id;
+    }
+
 }
 }
 
 import flash.errors.IOError;
+import flash.events.ErrorEvent;
 import flash.events.Event;
 import flash.events.IOErrorEvent;
 import flash.events.ProgressEvent;
@@ -110,6 +116,8 @@ class SocketChannelUnsafe extends AbstractUnsafe {
         _socket.timeout = channel.config.connectTimeoutMillis;
 
         _socket.addEventListener(Event.CONNECT, _socket_connectOperationComplete);
+        _socket.addEventListener(IOErrorEvent.IO_ERROR, _socket_connectOperationComplete);
+        _socket.addEventListener(SecurityErrorEvent.SECURITY_ERROR, _socket_connectOperationComplete);
 
         _socket.addEventListener(ProgressEvent.SOCKET_DATA, _socket_dataEventHandler);
         _socket.addEventListener(IOErrorEvent.IO_ERROR, _socket_ioErrorEventHandler);
@@ -121,17 +129,27 @@ class SocketChannelUnsafe extends AbstractUnsafe {
         /** @private EventHandler */
         function _socket_connectOperationComplete(event:Event):void {
             _socket.removeEventListener(Event.CONNECT, _socket_connectOperationComplete);
+            _socket.removeEventListener(IOErrorEvent.IO_ERROR, _socket_connectOperationComplete);
+            _socket.removeEventListener(SecurityErrorEvent.SECURITY_ERROR, _socket_connectOperationComplete);
 
             if (_socket.connected) {
-                // Notify channel active during pipeline.
-                channel.pipeline.fireChannelActive();
 
-                // Mark free w.
-                ch.setWritable(true);
-                _socket.flush();
+                try {
+                    // Mark free w.
+                    ch.setWritable(true);
+                } finally {
+                    // Notify channel active during pipeline.
+                    channel.pipeline.fireChannelActive();
+                    promise.trySuccess();
+                    _socket.flush();
+                }
+            } else if (event is IOErrorEvent) {
+                promise.tryFailure(new IOError((event as IOErrorEvent).text,
+                        (event as IOErrorEvent).errorID));
+            } else if (event is SecurityErrorEvent) {
+                promise.tryFailure(new SecurityError((event as SecurityErrorEvent).text,
+                        (event as SecurityErrorEvent).errorID));
             }
-
-            promise.trySuccess();
         }
     }
 
@@ -146,7 +164,7 @@ class SocketChannelUnsafe extends AbstractUnsafe {
             (ch.connectFuture as IChannelPromise).tryFailure(CLOSED_CHANNEL_EXCEPTION);
         }
         socket.close();
-        socket.dispatchEvent(new Event(Event.CLOSE));
+        _socket_detachEventListeners();
     }
 
     /** @private EventHandler */
@@ -158,12 +176,7 @@ class SocketChannelUnsafe extends AbstractUnsafe {
 
     /** @private EventHandler */
     private function _socket_closeEventHandler(event:Event):void {
-        var theSocket:Socket = socket || event.currentTarget as Socket;
-        theSocket.removeEventListener(Event.CLOSE, _socket_closeEventHandler);
-        theSocket.removeEventListener(ProgressEvent.SOCKET_DATA, _socket_dataEventHandler);
-        theSocket.removeEventListener(IOErrorEvent.IO_ERROR, _socket_ioErrorEventHandler);
-        theSocket.removeEventListener(SecurityErrorEvent.SECURITY_ERROR, _socket_securityErrorEventHandler);
-
+        _socket_detachEventListeners();
         channel.close();
     }
 
@@ -193,6 +206,14 @@ class SocketChannelUnsafe extends AbstractUnsafe {
 
         pipeline.fireChannelRead(bytes);
         pipeline.fireChannelReadComplete();
+    }
+
+    private function _socket_detachEventListeners():void {
+        var theSocket:Socket = socket;
+        theSocket.removeEventListener(Event.CLOSE, _socket_closeEventHandler);
+        theSocket.removeEventListener(ProgressEvent.SOCKET_DATA, _socket_dataEventHandler);
+        theSocket.removeEventListener(IOErrorEvent.IO_ERROR, _socket_ioErrorEventHandler);
+        theSocket.removeEventListener(SecurityErrorEvent.SECURITY_ERROR, _socket_securityErrorEventHandler);
     }
 
 }

@@ -170,13 +170,11 @@ public class ChannelOutboundBuffer {
     }
 
     private static function safeSuccess(promise:IChannelPromise):void {
-        // TODO: trySuccess.
-        promise.setSuccess();
+        promise && promise.trySuccess();
     }
 
     private static function safeFailure(promise:IChannelPromise, cause:Error):void {
-        // TODO: tryFailure.
-        promise.setFailure(cause);
+        promise && promise.tryFailure(cause);
     }
 
     private function incrementPendingOutboundBytes(size:Number):void {
@@ -227,16 +225,13 @@ public class ChannelOutboundBuffer {
             return;
         }
 
-        try {
-            _inFail = true;
-            for (; ;) {
-                if (!remove(cause, notify)) {
-                    break;
-                }
+        _inFail = true;
+        for (; ;) {
+            if (!remove(cause, notify)) {
+                break;
             }
-        } finally {
-            _inFail = false;
         }
+        _inFail = false;
     }
 
     internal function close(cause:Error):void {
