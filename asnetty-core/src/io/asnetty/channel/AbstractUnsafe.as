@@ -1,10 +1,11 @@
 package io.asnetty.channel {
+
 /**
  * @author Jeremy
  */
 public class AbstractUnsafe implements IUnsafe {
 
-    private static var CLOSED_CHANNEL_EXCEPTION:Error = new Error("Write to closed channel.");
+    protected static var CLOSED_CHANNEL_EXCEPTION:Error = new Error("Write to closed channel.");
 
     private var _channel:AbstractChannel;
     private var _outboundBuffer:ChannelOutboundBuffer;
@@ -27,7 +28,7 @@ public class AbstractUnsafe implements IUnsafe {
     }
 
     public function connect(host:String, port:int, promise:IChannelPromise):void {
-
+        // NOOP.
     }
 
     public final function disconnect(promise:IChannelPromise):void {
@@ -53,7 +54,45 @@ public class AbstractUnsafe implements IUnsafe {
     }
 
     public final function close(promise:IChannelPromise):void {
+        const outboundBuffer:ChannelOutboundBuffer = this._outboundBuffer;
+        if (!outboundBuffer) {
+            if (promise) {
+                // This means close() was called before so we just register a listener and return
+                _channel.closeFuture.addEventListener(ChannelFutureEvent.OPERATION_COMPLETE,
+                        function (event:ChannelFutureEvent):void {
+                            event.future.removeEventListener(ChannelFutureEvent.OPERATION_COMPLETE, arguments.callee);
+                            promise.setSuccess();
+                        }, false, 0, true);
+            }
+            return;
+        }
 
+        if (_channel.closeFuture.isDone) {
+            // Closed already.
+            safeSetSuccess(promise);
+            return;
+        }
+
+        const wasActive:Boolean = _channel.isActive;
+        this._outboundBuffer = null; // Disallow adding any messages and flushes to outboundBuffer.
+        try {
+            // Close the channel and fail the queued messages in all cases.
+            doClose();
+            _channel.closeFuture.setSuccess();
+            safeSetSuccess(promise);
+        } catch (e:Error) {
+            _channel.closeFuture.setSuccess();
+            safeSetFailure(promise, e);
+        } finally {
+            // Fail all the queued messages.
+            outboundBuffer.failFlushed(CLOSED_CHANNEL_EXCEPTION, false);
+            outboundBuffer.close(CLOSED_CHANNEL_EXCEPTION);
+        }
+
+        if (_inFlushOut) {
+            if (wasActive && !_channel.isActive)
+                _channel.pipeline.fireChannelInactive();
+        }
     }
 
     public final function closeForcibly():void {
@@ -68,8 +107,20 @@ public class AbstractUnsafe implements IUnsafe {
         // NOOP.
     }
 
-    public function beginRead():void {
+    public final function beginRead():void {
+        if (!_channel.isActive)
+            return;
 
+        try {
+            doBeginRead();
+        } catch (e:Error) {
+            _channel.pipeline.fireErrorCaught(e);
+            close(null);
+        }
+    }
+
+    protected virtual function doBeginRead():void {
+        // NOOP.
     }
 
     public function write(msg:*, promise:IChannelPromise):void {
@@ -142,13 +193,11 @@ public class AbstractUnsafe implements IUnsafe {
     }
 
     protected static function safeSetFailure(promise:IChannelPromise, cause:Error):void {
-        // TODO: safeSetFailure, tryFailure
-        promise.setFailure(cause);
+        promise && promise.setFailure(cause);
     }
 
     protected static function safeSetSuccess(promise:IChannelPromise):void {
-        // TODO: safeSetSuccess, trySuccess
-        promise.setSuccess();
+        promise && promise.setSuccess();
     }
 
     protected final function closeIfClosed():void {

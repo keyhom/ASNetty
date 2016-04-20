@@ -8,7 +8,6 @@ import flash.utils.ByteArray;
 public class SocketChannel extends AbstractChannel implements IChannel {
 
     private var _connectFuture:IChannelFuture;
-    private var _closeFuture:IChannelFuture;
     private var _socket:Socket;
 
     /**
@@ -17,7 +16,6 @@ public class SocketChannel extends AbstractChannel implements IChannel {
     public function SocketChannel() {
         super(new SocketChannelUnsafe(this), new DefaultChannelConfig(this));
         _connectFuture = new DefaultChannelPromise(this);
-        _closeFuture = new DefaultChannelPromise(this);
         _socket = new Socket();
     }
 
@@ -35,10 +33,6 @@ public class SocketChannel extends AbstractChannel implements IChannel {
 
     public function get connectFuture():IChannelFuture {
         return _connectFuture;
-    }
-
-    public function get closeFuture():IChannelFuture {
-        return _closeFuture;
     }
 
     public function setWritable(value:Boolean):void {
@@ -129,15 +123,15 @@ class SocketChannelUnsafe extends AbstractUnsafe {
             _socket.removeEventListener(Event.CONNECT, _socket_connectOperationComplete);
 
             if (_socket.connected) {
-                _socket.flush();
                 // Notify channel active during pipeline.
                 channel.pipeline.fireChannelActive();
 
                 // Mark free w.
                 ch.setWritable(true);
+                _socket.flush();
             }
 
-            promise.setSuccess();
+            promise.trySuccess();
         }
     }
 
@@ -148,7 +142,11 @@ class SocketChannelUnsafe extends AbstractUnsafe {
 
     override protected function doClose():void {
         super.doClose();
+        if (ch.connectFuture is IChannelPromise) {
+            (ch.connectFuture as IChannelPromise).tryFailure(CLOSED_CHANNEL_EXCEPTION);
+        }
         socket.close();
+        socket.dispatchEvent(new Event(Event.CLOSE));
     }
 
     /** @private EventHandler */
@@ -166,7 +164,7 @@ class SocketChannelUnsafe extends AbstractUnsafe {
         theSocket.removeEventListener(IOErrorEvent.IO_ERROR, _socket_ioErrorEventHandler);
         theSocket.removeEventListener(SecurityErrorEvent.SECURITY_ERROR, _socket_securityErrorEventHandler);
 
-        // TODO: force to shutdown the channel.
+        channel.close();
     }
 
     /** @private EventHandler */

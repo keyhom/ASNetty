@@ -306,7 +306,7 @@ public class DefaultChannelPipeline implements IChannelPipeline {
 
     public function fireChannelReadComplete():IChannelPipeline {
         _head.fireChannelReadComplete();
-        if (channel.config.autoRead)
+        if (channel.config.autoRead && channel.isOpen)
             read();
         return this;
     }

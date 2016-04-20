@@ -19,6 +19,7 @@ public class AbstractChannel implements IChannel {
     private var _bActive:Boolean;
     private var _bWritable:Boolean;
     private var _bReadable:Boolean;
+    private var _closeFuture:DefaultChannelPromise;
 
     /**
      * Constructor
@@ -38,6 +39,7 @@ public class AbstractChannel implements IChannel {
         this._unsafe = unsafe;
         this._config = config;
         this._pipeline = new DefaultChannelPipeline(this);
+        this._closeFuture = new DefaultChannelPromise(this);
     }
 
     public function get id():uint {
@@ -82,6 +84,10 @@ public class AbstractChannel implements IChannel {
 
     public function get pipeline():IChannelPipeline {
         return _pipeline;
+    }
+
+    public function get closeFuture():IChannelPromise {
+        return _closeFuture;
     }
 
     public function connect(host:String, port:int, timeout:Number = 30):IChannelFuture {

@@ -91,6 +91,7 @@ class TestChannelHandler extends ChannelHandlerAdapter implements IChannelInboun
     public function channelReadComplete(ctx:IChannelHandlerContext):void {
         trace("TEST channelReadComplete.");
         ctx.fireChannelReadComplete();
+        ctx.makeClose();
     }
 
     public function channelWritabilityChanged(ctx:IChannelHandlerContext):void {

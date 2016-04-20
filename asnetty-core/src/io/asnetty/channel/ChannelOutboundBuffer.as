@@ -239,6 +239,38 @@ public class ChannelOutboundBuffer {
         }
     }
 
+    internal function close(cause:Error):void {
+        if (_inFail)
+            return;
+
+        _inFail = true;
+
+        if (_channel.isOpen) {
+            throw new Error("close() must be invoked after the channel is closed.");
+        }
+
+        if (!isEmpty) {
+            throw new Error("close() must be invoked after all the flushed writes are handled.");
+        }
+
+        // Release all unflushed message.
+        try {
+            var e:OutboundEntry = _unflushedEntry;
+            while (e) {
+                // Just decrease; do not trigger any events via decrementPendingOutboundBytes().
+                var size:int = e.pendingSize;
+                _totalPendingSize -= size;
+
+                if (!e.cancelled) {
+                    safeFailure(e.promise, cause);
+                }
+
+                e = e.recycleAndGetNext();
+            }
+        } finally {
+            _inFail = false;
+        }
+    }
 
 } // class ChannelOutboundBuffer
 }
