@@ -49,7 +49,7 @@ public class Main extends Sprite {
                 trace("Connected successfuly.");
                 var bs:ByteArray = new ByteArray();
                 var str:String = "GET / HTTP/1.1\r\n";
-                str += "Host: www.baidu.com\r\n";
+                str += "Host: localhost\r\n";
                 str += "Connection: Keep-Alive\r\n";
                 bs.writeUTFBytes(str + "\r\n");
                 f.channel.writeAndFlush(bs);

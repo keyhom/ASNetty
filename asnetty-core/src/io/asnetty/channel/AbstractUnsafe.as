@@ -5,10 +5,11 @@ package io.asnetty.channel {
  */
 public class AbstractUnsafe implements IUnsafe {
 
-    protected static var CLOSED_CHANNEL_EXCEPTION:Error = new Error("Write to closed channel.");
+    protected static const CLOSED_CHANNEL_EXCEPTION:Error = new Error("Write to closed channel.");
 
     private var _channel:AbstractChannel;
     private var _outboundBuffer:ChannelOutboundBuffer;
+    private var _inFlushOut:Boolean;
 
     /**
      * Constructor
@@ -41,12 +42,12 @@ public class AbstractUnsafe implements IUnsafe {
             return;
         }
 
-        if (wasActive && channel.isActive) {
-
+        if (wasActive && !channel.isActive) {
+            _channel.pipeline.fireChannelInactive();
         }
 
         safeSetSuccess(promise);
-        closeIfClosed();
+        closeIfClosed(); // doDisconnect() might have closed the channel.
     }
 
     protected function doDisconnect():void {
@@ -154,8 +155,6 @@ public class AbstractUnsafe implements IUnsafe {
         flushOut();
     }
 
-    private var _inFlushOut:Boolean;
-
     protected function flushOut():void {
         if (_inFlushOut) {
             // Avoid re-entrance.
@@ -192,10 +191,12 @@ public class AbstractUnsafe implements IUnsafe {
         return msg;
     }
 
+    [Inline]
     protected static function safeSetFailure(promise:IChannelPromise, cause:Error):void {
         promise && promise.setFailure(cause);
     }
 
+    [Inline]
     protected static function safeSetSuccess(promise:IChannelPromise):void {
         promise && promise.setSuccess();
     }

@@ -19,6 +19,7 @@ public class Bootstrap extends EventDispatcher {
     private var _channelClass:Class;
     private var _options:Object;
     private var _handler:IChannelHandler;
+    private var _channel:IChannel;
 
     public function channel(channelClass:Class):Bootstrap {
         this._channelClass = channelClass;
@@ -41,11 +42,16 @@ public class Bootstrap extends EventDispatcher {
 
         const channel:IChannel = new _channelClass();
 
-        const pipeline:IChannelPipeline = channel.pipeline;
-        if (!pipeline)
-            throw "Null pipeline.";
+        try {
+            const pipeline:IChannelPipeline = channel.pipeline;
+            if (!pipeline)
+                throw "Null pipeline.";
 
-        pipeline.addLast(getQualifiedClassName(_handler), _handler);
+            pipeline.addLast(getQualifiedClassName(_handler), _handler);
+
+        } finally {
+            this._channel = channel;
+        }
 
         return channel.connect(host, port, timeout);
     }
@@ -57,6 +63,9 @@ public class Bootstrap extends EventDispatcher {
     }
 
     public function shutdown():IChannelFuture {
+        if (_channel) {
+            return _channel.close();
+        }
         return null;
     }
 
