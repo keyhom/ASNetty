@@ -2,7 +2,6 @@ package {
 
 import flash.display.Sprite;
 import flash.events.Event;
-import flash.utils.ByteArray;
 
 import io.asnetty.bootstrap.Bootstrap;
 import io.asnetty.channel.ChannelFutureEvent;
@@ -11,6 +10,10 @@ import io.asnetty.channel.IChannel;
 import io.asnetty.channel.IChannelFuture;
 import io.asnetty.channel.IChannelPipeline;
 import io.asnetty.channel.SocketChannel;
+import io.asnetty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.asnetty.handler.codec.LengthFieldPrepender;
+import io.asnetty.handler.codec.string.StringDecoder;
+import io.asnetty.handler.codec.string.StringEncoder;
 import io.asnetty.handler.logging.LoggingHandler;
 
 public class Main extends Sprite {
@@ -36,10 +39,16 @@ public class Main extends Sprite {
             const pipeline:IChannelPipeline = ch.pipeline;
             trace("Channel initializer callbacks.");
 
-            pipeline.addLast("LoggingHandler", new LoggingHandler());
-            pipeline.addLast("TestHandler", new TestChannelHandler());
+//            pipeline.addLast("LengthFieldPrepender", new LengthFieldPrepender(2));
+            pipeline.addLast("StringEncoder", new StringEncoder);
 
-        })).connect("www.qifun.com", 80, 2);
+            // pipeline.addLast("LengthFieldFrameDecoder", new LengthFieldBasedFrameDecoder(1048576, 0, 2, 0, 2));
+            pipeline.addLast("StringDecoder", new StringDecoder);
+
+            pipeline.addLast("LoggingHandler", new LoggingHandler());
+            // pipeline.addLast("TestHandler", new TestChannelHandler());
+
+        })).connect("localhost", 9090, 2);
 
         f.addEventListener(ChannelFutureEvent.OPERATION_COMPLETE, function (event:ChannelFutureEvent):void {
             f.removeEventListener(ChannelFutureEvent.OPERATION_COMPLETE, arguments.callee);
@@ -47,12 +56,12 @@ public class Main extends Sprite {
 
             if (f.isSuccess) {
                 trace("Connected successfuly.");
-                var bs:ByteArray = new ByteArray();
-                var str:String = "GET / HTTP/1.1\r\n";
-                str += "Host: localhost\r\n";
-                str += "Connection: Keep-Alive\r\n";
-                bs.writeUTFBytes(str + "\r\n");
-                f.channel.writeAndFlush(bs);
+//                var str:String = "GET / HTTP/1.1\r\n";
+//                str += "Host: localhost\r\n";
+//                str += "Connection: Keep-Alive\r\n";
+//                f.channel.writeAndFlush(str);
+                var str:String = "<policy-file-request/>";
+                f.channel.writeAndFlush(str);
             } else {
                 trace("Connected failed: ", f.cause.toString());
             }

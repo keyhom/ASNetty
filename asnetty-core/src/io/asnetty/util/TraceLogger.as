@@ -15,7 +15,7 @@ public class TraceLogger extends AbstractInternalLogger {
     public function TraceLogger(ref:*) {
         super(ref is String ? ref : getQualifiedClassName(ref));
         _timeFormatter = new DateTimeFormatter("fmtTime");
-        _timeFormatter.setDateTimePattern("HH:mm:ss SSS");
+        _timeFormatter.setDateTimePattern("HH:mm:ss");
     }
 
     override public function get isTraceEnabled():Boolean {
@@ -40,8 +40,9 @@ public class TraceLogger extends AbstractInternalLogger {
 
     protected function doPrint(format:String, args:Array):void {
         const tuple:FormattingTuple = MessageFormatter.applyFormat(format, args);
+        const date:Date = new Date();
         var str:String = _timeFormatter.format(new Date());
-        AS3Trace.consoleTrace(str + " " + tuple.message);
+        AS3Trace.consoleTrace(str + " " + padTime(date.getMilliseconds()) + " " + tuple.message);
         if (tuple.throwable) throw tuple.throwable;
     }
 
@@ -63,6 +64,18 @@ public class TraceLogger extends AbstractInternalLogger {
 
     override protected function doError(format:String, ...args):void {
         doPrint(format, args);
+    }
+
+    private static function padTime(timeNum:Number):String {
+        if (isNaN(timeNum) != timeNum == 0)
+            return "000";
+        if (timeNum > 0 && timeNum < 10) {
+            return "00" + int(timeNum).toString();
+        } else if (timeNum >= 10 && timeNum < 100) {
+            return "0" + int(timeNum).toString();
+        } else {
+            return int(timeNum).toString();
+        }
     }
 
 } // class TraceLogger
