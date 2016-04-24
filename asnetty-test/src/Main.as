@@ -46,9 +46,9 @@ public class Main extends Sprite {
             pipeline.addLast("StringDecoder", new StringDecoder);
 
             pipeline.addLast("LoggingHandler", new LoggingHandler());
-            // pipeline.addLast("TestHandler", new TestChannelHandler());
+            pipeline.addLast("TestHandler", new TestChannelHandler());
 
-        })).connect("localhost", 9090, 2);
+        })).connect("www.baidu.com", 80, 2);
 
         f.addEventListener(ChannelFutureEvent.OPERATION_COMPLETE, function (event:ChannelFutureEvent):void {
             f.removeEventListener(ChannelFutureEvent.OPERATION_COMPLETE, arguments.callee);
@@ -56,16 +56,19 @@ public class Main extends Sprite {
 
             if (f.isSuccess) {
                 trace("Connected successfuly.");
-//                var str:String = "GET / HTTP/1.1\r\n";
-//                str += "Host: localhost\r\n";
-//                str += "Connection: Keep-Alive\r\n";
-//                f.channel.writeAndFlush(str);
-                var str:String = "<policy-file-request/>";
-                f.channel.writeAndFlush(str);
+                sendRequest(f.channel);
             } else {
                 trace("Connected failed: ", f.cause.toString());
             }
         });
+    }
+
+    public static function sendRequest(channel:IChannel):void {
+        var str:String = "GET / HTTP/1.1\r\n";
+        str += "Host: www.baidu.com\r\n";
+        str += "Connection: Keep-Alive\r\n\r\n";
+//                var str:String = "<policy-file-request/>";
+        channel.writeAndFlush(str);
     }
 
 }
@@ -82,7 +85,7 @@ class TestChannelHandler extends ChannelDuplexHandler {
 
     override public function channelReadComplete(ctx:IChannelHandlerContext):void {
         ctx.fireChannelReadComplete();
-        ctx.makeClose();
+        // Main.sendRequest(ctx.channel);
     }
 
 }

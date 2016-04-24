@@ -1,8 +1,7 @@
 package io.asnetty.handler.codec {
 
-import avmplus.getQualifiedClassName;
-
 import flash.errors.IllegalOperationError;
+import flash.utils.getQualifiedClassName;
 
 import io.asnetty.channel.ChannelOutboundHandlerAdapter;
 import io.asnetty.channel.IChannelHandlerContext;
@@ -16,13 +15,18 @@ import io.asnetty.channel.IChannelPromise;
 public class MessageToMessageEncoder extends ChannelOutboundHandlerAdapter {
 
     private var _outboundMessageType:Class;
+    private var _messageMatcher:Function;
 
     /**
      * Creates a MessageToMessageEncoder instance.
      */
-    public function MessageToMessageEncoder(outboundMessageType:Class) {
+    public function MessageToMessageEncoder(classOrFuncMatcher:*) {
         super();
-        this._outboundMessageType = outboundMessageType;
+        if (classOrFuncMatcher is Class) {
+            this._outboundMessageType = classOrFuncMatcher;
+        } else if (classOrFuncMatcher is Function) {
+            this._messageMatcher = classOrFuncMatcher;
+        }
     }
 
     /**
@@ -32,14 +36,18 @@ public class MessageToMessageEncoder extends ChannelOutboundHandlerAdapter {
      * <code>IChannelPipeline</code>.
      */
     public function acceptOutboundMessage(msg:*):Boolean {
-        return (msg is _outboundMessageType);
+        if (null != _messageMatcher) {
+            return _messageMatcher(msg);
+        } else {
+            return (msg is _outboundMessageType);
+        }
     }
 
     /**
      * {@inheritDoc}
      */
     override public function write(ctx:IChannelHandlerContext, msg:*,
-            promise:IChannelPromise = null):void {
+                                   promise:IChannelPromise = null):void {
         var out:Vector.<Object> = null;
 
         try {
@@ -66,7 +74,7 @@ public class MessageToMessageEncoder extends ChannelOutboundHandlerAdapter {
                 } else if (sizeMinusOne > 0) {
                     // check if we can use a voidPromise for our extra writes to
                     // reduce GC-Pressure.
-                    for (var i:int = 0;i < sizeMinusOne; ++i) {
+                    for (var i:int = 0; i < sizeMinusOne; ++i) {
                         ctx.makeWrite(out[i]);
                     }
                     ctx.makeWrite(out[sizeMinusOne], promise);
@@ -83,7 +91,7 @@ public class MessageToMessageEncoder extends ChannelOutboundHandlerAdapter {
      * written message that can be handled by this encoder.
      */
     protected function encode(ctx:IChannelHandlerContext, msg:*,
-            out:Vector.<Object>):void {
+                              out:Vector.<Object>):void {
         // NOOP.
     }
 
