@@ -128,7 +128,12 @@ public class AbstractChannel implements IChannel {
         return _estimatorHandle;
     }
 
-    internal function doWrite(outboundBuffer:ChannelOutboundBuffer):void {
+    /** @private internal use only. */
+    internal function onWrite(outboundBuffer:ChannelOutboundBuffer):void {
+        this.doWrite(outboundBuffer);
+    }
+
+    protected function doWrite(outboundBuffer:ChannelOutboundBuffer):void {
         // NOOP.
     }
 

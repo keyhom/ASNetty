@@ -1,4 +1,5 @@
 package io.asnetty.channel {
+
 import flash.net.Socket;
 import flash.utils.ByteArray;
 
@@ -43,19 +44,16 @@ public class SocketChannel extends AbstractChannel implements IChannel {
         this.readable = value;
     }
 
-    override internal function doWrite(outboundBuffer:ChannelOutboundBuffer):void {
+    override protected function doWrite(outboundBuffer:ChannelOutboundBuffer):void {
         super.doWrite(outboundBuffer);
 
         const current:* = outboundBuffer.current;
         if (current is ByteArray) {
             const ba:ByteArray = current as ByteArray;
             _socket.writeBytes(ba);
-        } else if (current is String) {
-            const str:String = String(current);
-            _socket.writeUTFBytes(str);
-        } else {
-            // Unknown how to write it.
+            return;
         }
+        throw new Error("Only ByteArray written is allowed.");
     }
 
     public function toString():String {
@@ -66,7 +64,6 @@ public class SocketChannel extends AbstractChannel implements IChannel {
 }
 
 import flash.errors.IOError;
-import flash.events.ErrorEvent;
 import flash.events.Event;
 import flash.events.IOErrorEvent;
 import flash.events.ProgressEvent;
@@ -198,9 +195,9 @@ class SocketChannelUnsafe extends AbstractUnsafe {
 
         ch.setReadable(true);
 
-        const config:IChannelConfig = channel.config;
-        if (!config.autoRead)
-            return;
+        // const config:IChannelConfig = channel.config;
+        // if (!config.autoRead)
+        //     return;
 
         const pipeline:IChannelPipeline = channel.pipeline;
 

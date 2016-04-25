@@ -178,7 +178,7 @@ public class AbstractUnsafe implements IUnsafe {
         }
 
         try {
-            channel.doWrite(outboundBuffer);
+            channel.onWrite(outboundBuffer);
         } catch (e:Error) {
             outboundBuffer.failFlushed(e, true);
         } finally {
