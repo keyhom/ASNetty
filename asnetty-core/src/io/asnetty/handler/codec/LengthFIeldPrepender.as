@@ -101,8 +101,10 @@ public class LengthFieldPrepender extends MessageToMessageEncoder {
                 throw new IllegalOperationError("should be reach here.");
         }
 
-        if (buffer)
+        if (buffer) {
+            buffer.position = 0;
             out.push(buffer);
+        }
 
         out.push(msg);
     }

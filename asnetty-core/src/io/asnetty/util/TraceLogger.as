@@ -42,7 +42,7 @@ public class TraceLogger extends AbstractInternalLogger {
         const tuple:FormattingTuple = MessageFormatter.applyFormat(format, args);
         const date:Date = new Date();
         var str:String = _timeFormatter.format(new Date());
-        AS3Trace.consoleTrace(str + " " + padTime(date.getMilliseconds()) + " " + tuple.message);
+        AS3Trace.consoleTrace(str + " " + padTime(date.getMilliseconds()) + " [" + this.name + "] " + tuple.message);
         if (tuple.throwable) throw tuple.throwable;
     }
 

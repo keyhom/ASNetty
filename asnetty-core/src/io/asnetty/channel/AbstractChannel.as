@@ -1,4 +1,7 @@
 package io.asnetty.channel {
+
+import flash.utils.ByteArray;
+
 /**
  * Abstract implementation of <code>IChannel</code>.
  *
@@ -134,8 +137,62 @@ public class AbstractChannel implements IChannel {
     }
 
     protected function doWrite(outboundBuffer:ChannelOutboundBuffer):void {
-        // NOOP.
+        var writeSpinCount:int = -1;
+        for (; ;) {
+            const current:* = outboundBuffer.current;
+            if (!current) {
+                // wrote all messages.
+                return;
+            }
+
+
+            if (current is ByteArray) {
+                var ba:ByteArray = current as ByteArray;
+                if (!ba.bytesAvailable) {
+                    outboundBuffer.remove();
+                    continue;
+                }
+
+                if (-1 == writeSpinCount) {
+                    writeSpinCount = config.writeSpinCount;
+                }
+
+                var done:Boolean = false;
+                var flushedAmount:Number = 0;
+
+                for (var i:int = writeSpinCount - 1; i >= 0; i--) {
+                    var localFlushedAmount:int = doWriteBytes(ba);
+                    if (localFlushedAmount == 0)
+                        break;
+
+                    flushedAmount += localFlushedAmount;
+                    if (!ba.bytesAvailable) {
+                        done = true;
+                        break;
+                    }
+                }
+
+                // outboundBuffer.progress(flushedAmount);
+
+                if (done) {
+                    outboundBuffer.remove();
+                }
+            } else {
+                throw new Error("Only ByteArray written is allowed.");
+            }
+        }
+
+        // incompleteWrite();
     }
+
+    protected function doWriteBytes(bytes:ByteArray):int {
+        // NOOP.
+        return 0;
+    }
+
+//    protected function incompleteWrite():void {
+//        // NOOP.
+//    }
 
 }
 }

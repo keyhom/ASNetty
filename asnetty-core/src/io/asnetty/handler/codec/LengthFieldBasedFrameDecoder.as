@@ -54,7 +54,7 @@ public class LengthFieldBasedFrameDecoder extends ByteToMessageDecoder {
     }
 
     override protected final function decode(ctx:IChannelHandlerContext, inBuf:ByteArray, out:Vector.<Object>):void {
-        const decoded:Object = doDecode(ctx, inBuf);
+        var decoded:Object = doDecode(ctx, inBuf);
         if (decoded) {
             out.push(decoded);
         }
@@ -63,7 +63,7 @@ public class LengthFieldBasedFrameDecoder extends ByteToMessageDecoder {
     protected function doDecode(ctx:IChannelHandlerContext, inBuf:ByteArray):Object {
         if (_discardingTooLongFrame) {
             var bytesToDiscard:Number = this._bytesToDiscard;
-            const localBytesToDiscard:int = Math.min(bytesToDiscard, inBuf.bytesAvailable);
+            var localBytesToDiscard:int = Math.min(bytesToDiscard, inBuf.bytesAvailable);
             inBuf.position += localBytesToDiscard;
             bytesToDiscard -= localBytesToDiscard;
             this._bytesToDiscard = bytesToDiscard;
@@ -78,14 +78,14 @@ public class LengthFieldBasedFrameDecoder extends ByteToMessageDecoder {
         var frameLength:Number = getUnadjustedFrameLength(inBuf, actualLengthFieldOffset, _lengthFieldLength, _byteOrder);
 
         if (frameLength < 0) {
-            inBuf.position += _lengthFieldEndOffset;
+            inBuf.position += _lengthFieldEndOffset; // skipBytes
             throw new IllegalOperationError("negative pre-adjustment length field: " + frameLength);
         }
 
         frameLength += _lengthAdjustment + _lengthFieldEndOffset;
 
         if (frameLength < _lengthFieldEndOffset) {
-            inBuf.position += _lengthFieldEndOffset;
+            inBuf.position += _lengthFieldEndOffset; // skipBytes
             throw new IllegalOperationError("Adjusted frame length (" + frameLength + ") is less " +
                     "than lengthFieldEndOffset: " + _lengthFieldEndOffset);
         }
@@ -96,12 +96,12 @@ public class LengthFieldBasedFrameDecoder extends ByteToMessageDecoder {
 
             if (discard < 0) {
                 // buffer contains more bytes than the frameLength so we can discard all now
-                inBuf.position += frameLength;
+                inBuf.position += frameLength; // skipBytes
             } else {
                 // Enter the discard mode and discard everything received so far.
                 _discardingTooLongFrame = true;
                 _bytesToDiscard = discard;
-                inBuf.position += inBuf.bytesAvailable;
+                inBuf.position += inBuf.bytesAvailable; // skipBytes
             }
 
             failIfNecessary(true);
@@ -115,18 +115,18 @@ public class LengthFieldBasedFrameDecoder extends ByteToMessageDecoder {
         }
 
         if (_initialBytesToStrip > frameLengthInt) {
-            inBuf.position += frameLengthInt;
+            inBuf.position += frameLengthInt; // skipBytes
             throw new IllegalOperationError("Adjusted frame length (" + frameLength + ") is less " +
                     "than initialBytesToStrip: " + _initialBytesToStrip);
         }
 
-        inBuf.position += _initialBytesToStrip;
+        inBuf.position += _initialBytesToStrip; // skipBytes
 
         // extract frame
-        const readerIndex:int = inBuf.position;
-        const actualFrameLength:int = frameLengthInt - _initialBytesToStrip;
-        const frame:ByteArray = extractFrame(ctx, inBuf, readerIndex, actualFrameLength);
-        inBuf.position += (readerIndex + actualFrameLength);
+        var readerIndex:int = inBuf.position;
+        var actualFrameLength:int = frameLengthInt - _initialBytesToStrip;
+        var frame:ByteArray = extractFrame(ctx, inBuf, readerIndex, actualFrameLength);
+        inBuf.position = readerIndex + actualFrameLength;
 
         return frame;
     }
@@ -134,7 +134,8 @@ public class LengthFieldBasedFrameDecoder extends ByteToMessageDecoder {
     //noinspection JSMethodCanBeStatic
     protected function extractFrame(ctx:IChannelHandlerContext, inBuf:ByteArray, readerIndex:int, actualFrameLength:int):ByteArray {
         var bytes:ByteArray = new ByteArray();
-        inBuf.readBytes(bytes, readerIndex, actualFrameLength);
+        inBuf.position = readerIndex;
+        inBuf.readBytes(bytes, 0, actualFrameLength);
         return bytes;
     }
 

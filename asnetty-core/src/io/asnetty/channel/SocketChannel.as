@@ -44,16 +44,16 @@ public class SocketChannel extends AbstractChannel implements IChannel {
         this.readable = value;
     }
 
-    override protected function doWrite(outboundBuffer:ChannelOutboundBuffer):void {
-        super.doWrite(outboundBuffer);
+//    override protected function doWrite(outboundBuffer:ChannelOutboundBuffer):void {
+//    }
 
-        const current:* = outboundBuffer.current;
-        if (current is ByteArray) {
-            const ba:ByteArray = current as ByteArray;
-            _socket.writeBytes(ba);
-            return;
-        }
-        throw new Error("Only ByteArray written is allowed.");
+    override protected function doWriteBytes(bytes:ByteArray):int {
+        if (bytes.bytesAvailable == 0 || !_socket.connected)
+            return 0;
+
+        var checkpoint:int = _socket.bytesAvailable;
+        _socket.writeBytes(bytes);
+        return _socket.bytesAvailable - checkpoint;
     }
 
     public function toString():String {
@@ -72,7 +72,6 @@ import flash.net.Socket;
 import flash.utils.ByteArray;
 
 import io.asnetty.channel.AbstractUnsafe;
-import io.asnetty.channel.IChannelConfig;
 import io.asnetty.channel.IChannelPipeline;
 import io.asnetty.channel.IChannelPromise;
 import io.asnetty.channel.SocketChannel;
