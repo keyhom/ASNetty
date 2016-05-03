@@ -143,7 +143,7 @@ public class LengthFieldBasedFrameDecoder extends ByteToMessageDecoder {
         buf.endian = order || _byteOrder;
         var frameLength:Number;
         var oldPos:int = buf.position;
-        buf.position += offset;
+        buf.position = offset;
 
         switch (length) {
             case 1:
