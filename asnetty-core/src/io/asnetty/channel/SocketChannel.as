@@ -47,13 +47,21 @@ public class SocketChannel extends AbstractChannel implements IChannel {
 //    override protected function doWrite(outboundBuffer:ChannelOutboundBuffer):void {
 //    }
 
+    override protected function doWrite(outboundBuffer:ChannelOutboundBuffer):void {
+        super.doWrite(outboundBuffer);
+        if (_socket) {
+            _socket.flush();
+        }
+    }
+
     override protected function doWriteBytes(bytes:ByteArray):int {
         if (bytes.bytesAvailable == 0 || !_socket.connected)
             return 0;
 
-        var checkpoint:int = _socket.bytesAvailable;
+        var checkpoint:int = bytes.bytesAvailable;
         _socket.writeBytes(bytes);
-        return _socket.bytesAvailable - checkpoint;
+        bytes.position = checkpoint;
+        return checkpoint;
     }
 
     public function toString():String {
