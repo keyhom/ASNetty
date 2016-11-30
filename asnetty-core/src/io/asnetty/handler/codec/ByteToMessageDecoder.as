@@ -23,16 +23,14 @@ public class ByteToMessageDecoder extends ChannelInboundHandlerAdapter {
      */
     public static function MERGE_CUMULATE(cumulation:ByteArray,
                                           bufIn:ByteArray):ByteArray {
-        var buffer:ByteArray;
-        if (cumulation.position > cumulation.length - bufIn.bytesAvailable) {
-            // Expand cumulation ( by replace it ) when either there is not more room in the buffer
-            buffer = expandCumulation(cumulation, bufIn.bytesAvailable);
-        } else {
-            buffer = cumulation;
-        }
-        buffer.writeBytes(bufIn);
+        var oldPos : int = cumulation.position;
+        cumulation.position = cumulation.length;
+
+        cumulation.writeBytes( bufIn );
+        cumulation.position = oldPos;
         bufIn.clear();
-        return buffer;
+
+        return cumulation;
     }
 
     private var _cumulation:ByteArray;
